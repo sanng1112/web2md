@@ -2,7 +2,7 @@
 
 **Convert any web page to clean, structured Markdown — instantly.**
 
-[![Version](https://img.shields.io/badge/version-1.2.0-blue)](https://github.com/sanng1112/web2md)
+[![Version](https://img.shields.io/badge/version-1.3.0-blue)](https://github.com/sanng1112/web2md)
 [![License](https://img.shields.io/badge/license-MIT-green)](LICENSE)
 [![Chrome](https://img.shields.io/badge/platform-Chrome-brightgreen)](https://chrome.google.com/webstore)
 
@@ -22,8 +22,10 @@
 - **Auto-copy** — optionally copies to clipboard immediately after conversion
 - **Word count** — real-time char/word/read-time stats
 - **Mermaid diagrams** — auto-detects and preserves Mermaid diagram blocks as fenced code
+- **MathJax / LaTeX** — detects and preserves `$$...$$` display math and `$...$` inline math
 - **Custom CSS selector** — specify a precise element to extract (Raw mode)
 - **History** — saves last 10 conversions locally for quick recall
+- **Batch tab conversion** — convert multiple open tabs at once, merged into a single file
 
 ## How it works
 
@@ -38,6 +40,7 @@ Web2md operates entirely client-side. No data is ever collected, transmitted, or
 
 **Permissions explained:**
 - `activeTab` — needed to read the current page's content for conversion
+- `tabs` — needed for batch conversion to list open tabs
 - `contextMenus` — needed for right-click "Convert to Markdown" menu items
 - `storage` — needed to remember your option preferences locally
 - `clipboardWrite` — needed for auto-copy to clipboard feature
@@ -58,10 +61,8 @@ Customize at `chrome://extensions/shortcuts`
 - [x] Auto-save conversion history (last 10)
 - [x] Mermaid diagram detection & preservation
 - [x] Custom CSS selector for targeted extraction
-- [ ] Batch tab conversion
-- [ ] Custom CSS selector input
-- [ ] MathJax / LaTeX preserve
-- [ ] Mermaid diagram support
+- [x] Batch tab conversion
+- [x] MathJax / LaTeX preserve
 - [ ] Firefox extension port
 - [ ] Chrome Web Store release
 

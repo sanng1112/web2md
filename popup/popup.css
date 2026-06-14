@@ -373,6 +373,57 @@ body {
   border-color: var(--accent);
 }
 
+.batch-bar {
+  padding: 6px 14px;
+  border-bottom: 1px solid var(--border2);
+}
+
+.batch-header {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  margin-bottom: 4px;
+}
+
+.batch-list {
+  max-height: 140px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.batch-tab {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 2px 0;
+  font-size: 11px;
+  cursor: pointer;
+}
+
+.batch-tab input[type="checkbox"] {
+  margin: 0;
+  accent-color: var(--accent);
+  flex-shrink: 0;
+}
+
+.batch-tab .tab-title {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--text);
+}
+
+.batch-tab .tab-url {
+  font-size: 10px;
+  color: var(--muted);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 180px;
+}
+
 .footer {
   padding: 6px 14px;
   text-align: center;

@@ -12,7 +12,7 @@
       <h1 class="logo">Web2md</h1>
       <div class="header-right">
         <button id="btnTheme" class="btn-icon" title="Toggle dark mode">&#9790;</button>
-        <span class="version">v1.2</span>
+        <span class="version">v1.3</span>
       </div>
     </header>
 
@@ -95,6 +95,19 @@
         <option value="">— history —</option>
       </select>
       <button id="btnClearHistory" class="btn-icon-sm" title="Clear history">&#128465;</button>
+    </div>
+
+    <div class="batch-bar" id="batchBar">
+      <div class="batch-header">
+        <span class="group-label">Batch (select tabs)</span>
+        <button id="btnLoadTabs" class="btn-icon-sm" title="Reload tab list">&#8635;</button>
+        <button id="btnSelectAll" class="btn-icon-sm" title="Select all">&#9745;</button>
+        <button id="btnDeselectAll" class="btn-icon-sm" title="Deselect all">&#9744;</button>
+      </div>
+      <div class="batch-list" id="batchList"></div>
+      <button id="btnBatchConvert" class="btn btn-secondary" style="width:100%;margin-top:4px;">
+        <span class="icon">&#128196;</span> Convert checked tabs
+      </button>
     </div>
 
     <div class="status" id="status"></div>

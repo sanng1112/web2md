@@ -122,6 +122,13 @@
       m.replaceWith(pre);
     });
 
+    el.querySelectorAll('script[type^="math/tex"]').forEach((m) => {
+      const pre = document.createElement('pre');
+      pre.className = 'language-math';
+      pre.textContent = m.textContent.replace(/^;\s*mode\s*=\s*display\s*/i, '').trim();
+      m.replaceWith(pre);
+    });
+
     el.querySelectorAll('a[href]').forEach((a) => {
       const href = a.getAttribute('href');
       if (href && !href.startsWith('http') && !href.startsWith('#') && !href.startsWith('mailto:') && !href.startsWith('javascript:')) {
@@ -221,6 +228,11 @@
       replacement: (content) => '\n```mermaid\n' + content.trim() + '\n```\n',
     });
 
+    td.addRule('mathBlock', {
+      filter: (node) => node.nodeName === 'PRE' && node.className.includes('language-math'),
+      replacement: (content) => '\n```math\n' + content.trim() + '\n```\n',
+    });
+
     td.keep(['kbd', 'mark', 'abbr', 'dfn', 'sub', 'sup', 'small']);
 
     return td;
@@ -251,6 +263,7 @@
   }
 
   function cleanMarkdown(md) {
+    const isMath = (s) => /\\\\|[{}]|\^|_|\\[a-zA-Z]+/.test(s);
     return md
       .replace(/&nbsp;/g, ' ')
       .replace(/&amp;/g, '&')
@@ -258,6 +271,8 @@
       .replace(/&gt;/g, '>')
       .replace(/&quot;/g, '"')
       .replace(/&#39;/g, "'")
+      .replace(/\$\$([\s\S]+?)\$\$/g, (_, body) => '\n```math\n' + body.trim() + '\n```\n')
+      .replace(/\$([^$\n\r]+?)\$/g, (_, body) => isMath(body) ? '`' + body + '`' : '\\$' + body + '\\$')
       .split('\n')
       .map((l) => l.replace(/[ \t]+$/, ''))
       .filter((l, i, arr) => {

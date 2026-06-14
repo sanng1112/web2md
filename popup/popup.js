@@ -28,6 +28,11 @@
     historyBar: document.getElementById('historyBar'),
     historySelect: document.getElementById('historySelect'),
     btnClearHistory: document.getElementById('btnClearHistory'),
+    btnLoadTabs: document.getElementById('btnLoadTabs'),
+    btnSelectAll: document.getElementById('btnSelectAll'),
+    btnDeselectAll: document.getElementById('btnDeselectAll'),
+    batchList: document.getElementById('batchList'),
+    btnBatchConvert: document.getElementById('btnBatchConvert'),
   };
 
   let lastResult = null;
@@ -122,6 +127,64 @@
     localStorage.removeItem(HISTORY_KEY);
     renderHistory([]);
     setStatus('History cleared');
+  }
+
+  async function loadBatchTabs() {
+    els.batchList.innerHTML = '<div class="batch-tab" style="color:var(--muted);padding:4px;">Loading tabs...</div>';
+    const tabs = await chrome.tabs.query({ currentWindow: true });
+    els.batchList.innerHTML = '';
+    tabs.forEach((tab, i) => {
+      const div = document.createElement('label');
+      div.className = 'batch-tab';
+      div.innerHTML = [
+        '<input type="checkbox" value="' + tab.id + '" class="batch-check">',
+        '<span class="tab-title">' + (tab.title || 'Untitled').replace(/</g, '&lt;').substring(0, 50) + '</span>',
+        '<span class="tab-url">' + (tab.url || '').replace(/</g, '&lt;') + '</span>',
+      ].join('');
+      els.batchList.appendChild(div);
+    });
+  }
+
+  async function batchConvert() {
+    const checks = els.batchList.querySelectorAll('.batch-check:checked');
+    const ids = Array.from(checks).map((c) => parseInt(c.value));
+    if (!ids.length) {
+      setStatus('✗ No tabs selected', true);
+      return;
+    }
+    els.btnBatchConvert.disabled = true;
+    setStatus('Converting ' + ids.length + ' tabs...');
+    disableOutputButtons();
+
+    const parts = [];
+    let failed = 0;
+    for (let i = 0; i < ids.length; i++) {
+      try {
+        const tab = await chrome.tabs.get(ids[i]);
+        const response = await chrome.tabs.sendMessage(ids[i], { action: 'convert', options: getOptions() });
+        if (response?.success) {
+          parts.push('## ' + (tab.title || 'Untitled') + '\n\n> Source: ' + tab.url + '\n\n' + response.markdown);
+        } else {
+          failed++;
+          parts.push('## ' + (tab.title || 'Untitled') + '\n\n> Source: ' + tab.url + '\n\n_Conversion failed: ' + (response?.error || 'unknown') + '_\n');
+        }
+      } catch (_) {
+        failed++;
+      }
+    }
+
+    const merged = parts.join('\n\n---\n\n');
+    lastResult = { markdown: merged };
+    els.preview.value = merged;
+    updateStats(merged);
+    enableOutputButtons();
+
+    if (els.optAutoCopy.checked) {
+      try { await navigator.clipboard.writeText(merged); } catch (_) {}
+    }
+
+    setStatus('✓ ' + (ids.length - failed) + ' tabs converted' + (failed ? ', ' + failed + ' failed' : ''));
+    els.btnBatchConvert.disabled = false;
   }
 
   function selectHistoryItem(index) {
@@ -313,6 +376,15 @@
   });
 
   els.btnClearHistory.addEventListener('click', clearHistory);
+
+  els.btnLoadTabs.addEventListener('click', loadBatchTabs);
+  els.btnSelectAll.addEventListener('click', () => {
+    els.batchList.querySelectorAll('.batch-check').forEach((c) => { c.checked = true; });
+  });
+  els.btnDeselectAll.addEventListener('click', () => {
+    els.batchList.querySelectorAll('.batch-check').forEach((c) => { c.checked = false; });
+  });
+  els.btnBatchConvert.addEventListener('click', batchConvert);
 
   els.historySelect.addEventListener('change', (e) => {
     const idx = parseInt(e.target.value);
