@@ -53,68 +53,143 @@
     return { html: article.innerHTML, title: document.title, textContent: article.textContent || '' };
   }
 
-  const STRUCTURAL_JUNK = [
-    'script', 'style', 'noscript', 'iframe', 'object', 'embed', 'svg',
-    'nav', 'footer', 'header', 'form',
+  // ---------------------------------------------------------------------------
+  // STRUCTURAL_JUNK — class-based noise selectors (safelisted, stripped in bulk)
+  // ---------------------------------------------------------------------------
+  const JUNK_SELECTORS = [
+    // structural
+    'nav', 'footer', 'form',
     '[role="navigation"]', '[role="banner"]', '[role="contentinfo"]', '[role="complementary"]',
     '[aria-hidden="true"]',
+    // sidebars & widgets
     '.sidebar', '.side-bar', '.widget', '.aside',
-    '.ad', '.ads', '.advertisement', '.ad-container', '[class*="ad-"]', '[id*="google_ads"]',
-    '.social-share', '.social-links', '.share-buttons', '[class*="share-"]',
-    '.comments', '#comments', '.comment-section', '[class*="comment-"]',
+    // ads (exact matches only — avoid false positives)
+    '.ad', '.ads', '.advertisement', '.ad-container',
+    // social
+    '.social-share', '.social-links', '.share-buttons',
+    // comments
+    '.comments', '#comments', '.comment-section',
+    // related content
     '.related-posts', '.related-articles', '.you-may-also-like',
-    '.breadcrumb', '.breadcrumbs', '[class*="breadcrumb"]',
-    '.cookie-banner', '.cookie-consent', '#cookie-notice', '[class*="cookie-"]',
-    '.gdpr', '.consent-banner', '[class*="consent-"]',
+    // breadcrumbs
+    '.breadcrumb', '.breadcrumbs',
+    // cookie / GDPR
+    '.cookie-banner', '.cookie-consent', '#cookie-notice',
+    '.gdpr', '.consent-banner',
+    // newsletter / subscribe
     '.newsletter', '.subscribe', '.signup-form',
+    // pagination
     '.pagination', '.page-nav', '.prev-next',
+    // modals / overlays
     '.modal', '.popup', '.overlay', '.lightbox',
-  ].join(',');
+  ];
 
-  function isHidden(n) {
-    if (n.hasAttribute('hidden')) return true;
-    const s = n.style;
+  // Elements that are always removed regardless of content (junk)
+  const JUNK_TAGS = new Set(['script', 'style', 'noscript', 'object', 'embed']);
+
+  // Elements removed during raw extraction because Turndown handles them poorly.
+  // These are only removed in extractRaw; Readability handles them internally.
+  const RAW_REMOVE_TAGS = new Set(['iframe', 'svg']);
+
+  function isHidden(el) {
+    if (el.hasAttribute('hidden')) return true;
+    const s = el.style;
     if (s && (s.display === 'none' || s.visibility === 'hidden')) return true;
-    return n.offsetParent === null && getComputedStyle(n).display === 'none';
-  }
-
-  function pruneEmpties(el) {
-    const walker = document.createTreeWalker(el, NodeFilter.SHOW_ELEMENT, {
-      acceptNode: (node) => {
-        const tag = node.tagName;
-        if (tag === 'BR' || tag === 'HR' || tag === 'IMG' || tag === 'INPUT' || tag === 'WBR') return NodeFilter.FILTER_SKIP;
-        return NodeFilter.FILTER_ACCEPT;
-      },
-    });
-
-    const nodes = [];
-    while (walker.nextNode()) nodes.push(walker.currentNode);
-    for (let i = nodes.length - 1; i >= 0; i--) {
-      const n = nodes[i];
-      if (!n.textContent.trim() && !n.querySelector('img, svg, canvas, video, iframe')) {
-        n.remove();
-      }
+    // offsetParent is null for disconnected nodes; only check computed style
+    // when the node is still connected
+    try {
+      return el.offsetParent === null && getComputedStyle(el).display === 'none';
+    } catch (_) {
+      return false;
     }
   }
 
+  // ---------------------------------------------------------------------------
+  // DOM normalization (single tree-walker pass where possible)
+  // ---------------------------------------------------------------------------
   function normalizeDom(el) {
-    el.querySelectorAll(STRUCTURAL_JUNK).forEach((n) => n.remove());
+    // 1. Bulk-remove known junk by tag
+    el.querySelectorAll(JUNK_TAGS_SEL).forEach((n) => n.remove());
 
-    el.querySelectorAll('[style*="display:none"], [style*="display: none"], [hidden]').forEach((n) => {
-      if (isHidden(n)) n.remove();
-    });
+    // 2. Remove by CSS selector (class-based junk)
+    el.querySelectorAll(JUNK_SELECTORS.join(',')).forEach((n) => n.remove());
 
-    pruneEmpties(el);
+    // 3. Single tree walker for style-hidden, empty pruning, and BR/HR cleanup
+    const walker = document.createTreeWalker(el, NodeFilter.SHOW_ELEMENT | NodeFilter.SHOW_TEXT, null, false);
+    const toRemove = [];
+    const nodes = [];
 
+    while (walker.nextNode()) nodes.push(walker.currentNode);
+
+    for (let i = 0; i < nodes.length; i++) {
+      const n = nodes[i];
+
+      // Text nodes: trim trailing whitespace (handled later in cleanMarkdown)
+      if (n.nodeType === Node.TEXT_NODE) continue;
+
+      const tag = n.tagName;
+
+      // 3a. Remove hidden elements
+      if (isHidden(n)) {
+        toRemove.push(n);
+        continue;
+      }
+
+      // 3b. Collapse empty elements (no text content, no media children)
+      if (tag !== 'BR' && tag !== 'HR' && tag !== 'IMG' && tag !== 'INPUT' && tag !== 'WBR' && tag !== 'VIDEO' && tag !== 'AUDIO' && tag !== 'IFRAME') {
+        if (!n.textContent.trim() && !n.querySelector('img, video, audio, canvas, iframe')) {
+          toRemove.push(n);
+          continue;
+        }
+      }
+
+      // 3c. Handle <br> — collapse consecutive <br>s into one
+      if (tag === 'BR') {
+        let next = n.nextSibling;
+        while (next && next.nodeType === Node.TEXT_NODE && !next.textContent.trim()) {
+          next = next.nextSibling;
+        }
+        if (next && next.nodeType === Node.ELEMENT_NODE && next.tagName === 'BR') {
+          // This <br> has another <br> right after it — remove this one
+          toRemove.push(n);
+        }
+        continue;
+      }
+
+      // 3d. Empty <p></p> — remove entirely
+      if (tag === 'P' && n.children.length === 0 && !n.textContent.trim()) {
+        toRemove.push(n);
+        continue;
+      }
+    }
+
+    toRemove.forEach((n) => n.remove());
+
+    // 4. Normalize code blocks: handle <pre><code> + data-* language attrs
     el.querySelectorAll('pre code').forEach((code) => {
       const pre = code.parentElement;
-      if (pre.tagName === 'PRE') {
-        const langClass = code.className.match(/language-(\w+)/)?.[1];
-        pre.className = 'language-' + (langClass || '');
-        pre.textContent = code.textContent;
+      if (pre.tagName !== 'PRE') return;
+      // Priority: class="language-*" > data-language > data-lang > none
+      const lang = code.className.match(/language-(\w+)/)?.[1]
+        || code.getAttribute('data-language')
+        || pre.getAttribute('data-language')
+        || pre.getAttribute('data-lang')
+        || '';
+      // Keep the <code> child in place (Turndown's fencedCodeBlock rule
+      // reads language from <code>.className), and also mirror to <pre>
+      code.className = 'language-' + lang;
+      pre.className = 'language-' + lang;
+    });
+
+    // 5. Inline <code> not inside <pre> — mark with a data attribute so
+    //    the Turndown rule can distinguish them from block code
+    el.querySelectorAll('code').forEach((c) => {
+      if (!c.closest('pre')) {
+        c.setAttribute('data-inline-code', '');
       }
     });
 
+    // 6. Mermaid diagrams
     el.querySelectorAll('.mermaid, pre.mermaid, div.mermaid, [data-processed="true"].mermaid').forEach((m) => {
       const pre = document.createElement('pre');
       pre.className = 'language-mermaid';
@@ -122,6 +197,7 @@
       m.replaceWith(pre);
     });
 
+    // 7. MathJax script tags (<script type="math/tex">)
     el.querySelectorAll('script[type^="math/tex"]').forEach((m) => {
       const pre = document.createElement('pre');
       pre.className = 'language-math';
@@ -129,21 +205,31 @@
       m.replaceWith(pre);
     });
 
+    // 8. Resolve relative URLs
     el.querySelectorAll('a[href]').forEach((a) => {
       const href = a.getAttribute('href');
-      if (href && !href.startsWith('http') && !href.startsWith('#') && !href.startsWith('mailto:') && !href.startsWith('javascript:')) {
-        try { a.href = new URL(href, window.location.origin).href; } catch (_) {}
-      }
+      if (!href) return;
+      if (/^(https?|mailto|javascript|#|data):/.test(href)) return;
+      try { a.href = new URL(href, window.location.origin).href; } catch (_) {}
     });
 
     el.querySelectorAll('img[src]').forEach((img) => {
       if (!img.alt && !img.getAttribute('alt')) img.alt = '';
       const src = img.getAttribute('src');
-      if (src && !src.startsWith('http') && !src.startsWith('data:')) {
-        try { img.src = new URL(src, window.location.origin).href; } catch (_) {}
-      }
+      if (!src) return;
+      if (src.startsWith('http') || src.startsWith('data:')) return;
+      try { img.src = new URL(src, window.location.origin).href; } catch (_) {}
+    });
+
+    // 9. Task-list checkboxes — convert to [x] / [ ] text so Turndown
+    //    doesn't strip them
+    el.querySelectorAll('li input[type="checkbox"]').forEach((cb) => {
+      const text = cb.checked ? '[x] ' : '[ ] ';
+      cb.replaceWith(document.createTextNode(text));
     });
   }
+
+  const JUNK_TAGS_SEL = Array.from(new Set([...JUNK_TAGS, ...RAW_REMOVE_TAGS])).join(',');
 
   function buildTurndownService(options) {
     const td = new TurndownService({
@@ -159,20 +245,41 @@
       preformattedCode: true,
     });
 
+    // -----------------------------------------------------------------------
+    // Links — preserve title, skip empty / javascript: / void anchors
+    // -----------------------------------------------------------------------
     td.addRule('links', {
       filter: (node) => node.nodeName === 'A' && node.getAttribute('href'),
       replacement: (content, node) => {
+        const href = node.getAttribute('href');
+        if (!href || href === '#' || /^javascript:/.test(href)) return content;
         const title = node.getAttribute('title');
-        return `[${content}](${node.getAttribute('href')}${title ? ` "${title}"` : ''})`;
+        return `[${content}](${href}${title ? ` "${title}"` : ''})`;
       },
     });
 
+    // -----------------------------------------------------------------------
+    // Images — toggle on/off; handle srcset (pick largest)
+    // -----------------------------------------------------------------------
     const imgRule = options.includeImages !== false
       ? {
           filter: 'img',
           replacement: (_content, node) => {
             const alt = node.getAttribute('alt') || '';
-            const src = node.getAttribute('src') || '';
+            let src = node.getAttribute('src') || '';
+            // Prefer srcset largest candidate over plain src when available
+            const srcset = node.getAttribute('srcset');
+            if (srcset) {
+              const candidates = srcset.split(',')
+                .map((s) => s.trim().split(/\s+/))
+                .filter(([url]) => url && !url.startsWith('data:'))
+                .sort((a, b) => {
+                  const wa = parseInt(a[1]) || 0;
+                  const wb = parseInt(b[1]) || 0;
+                  return wb - wa; // largest first
+                });
+              if (candidates.length) src = candidates[0][0];
+            }
             const title = node.getAttribute('title') || '';
             if (!src) return alt ? `[${alt}]` : '';
             return `![${alt}](${src}${title ? ` "${title}"` : ''})`;
@@ -188,6 +295,9 @@
 
     td.addRule('images', imgRule);
 
+    // -----------------------------------------------------------------------
+    // <figure> + <figcaption> → image with italic caption
+    // -----------------------------------------------------------------------
     td.addRule('figure', {
       filter: 'figure',
       replacement: (content, node) => {
@@ -203,21 +313,98 @@
       },
     });
 
+    // -----------------------------------------------------------------------
+    // Strikethrough <del>, <s> → ~~text~~
+    // -----------------------------------------------------------------------
     td.addRule('strikethrough', {
-      filter: ['del', 's'],
+      filter: ['del', 's', 'strike'],
       replacement: (content) => '~~' + content + '~~',
     });
 
+    // -----------------------------------------------------------------------
+    // Table cells — strip extra whitespace for clean pipe tables
+    // -----------------------------------------------------------------------
     td.addRule('tableCell', {
       filter: ['th', 'td'],
       replacement: (content) => content.trim(),
     });
 
-    td.addRule('details', {
-      filter: 'details',
-      replacement: (content) => '\n' + content + '\n',
+    // -----------------------------------------------------------------------
+    // Table — handle alignment + header separator + colspan
+    // -----------------------------------------------------------------------
+    td.addRule('tableRow', {
+      filter: 'tr',
+      replacement: (content, node) => {
+        const isHeader = node.parentNode?.nodeName === 'THEAD';
+        const cells = node.querySelectorAll('th, td');
+        const parts = Array.from(cells).map((cell) => {
+          const colspan = parseInt(cell.getAttribute('colspan')) || 1;
+          const cellContent = (cell.textContent || '').trim() || ' ';
+          if (colspan > 1) return Array(colspan).fill(cellContent).join(' | ');
+          return cellContent;
+        });
+
+        if (isHeader) {
+          const aligns = Array.from(cells).map((cell) => {
+            const align = cell.getAttribute('align') || '';
+            const colspan = parseInt(cell.getAttribute('colspan')) || 1;
+            const marker = align === 'left' ? ':---'
+              : align === 'center' ? ':---:'
+              : align === 'right' ? '---:'
+              : '---';
+            return Array(colspan).fill(marker).join(' | ');
+          });
+          return '| ' + parts.join(' | ') + ' |\n| ' + aligns.join(' | ') + ' |\n';
+        }
+
+        return '| ' + parts.join(' | ') + ' |\n';
+      },
     });
 
+    // -----------------------------------------------------------------------
+    // <details> / <summary> → collapse into plain text
+    // -----------------------------------------------------------------------
+    td.addRule('details', {
+      filter: 'details',
+      replacement: (content, node) => {
+        const summary = node.querySelector('summary');
+        const summaryText = summary ? '**' + summary.textContent.trim() + '**\n\n' : '';
+        // Remove summary from content since we handle it
+        if (summary) summary.remove();
+        return '\n' + summaryText + content.trim() + '\n\n';
+      },
+    });
+
+    // -----------------------------------------------------------------------
+    // Definition lists <dl> <dt> <dd> → ``term\n: definition``
+    // -----------------------------------------------------------------------
+    td.addRule('definitionList', {
+      filter: 'dl',
+      replacement: (content, node) => {
+        const items = [];
+        let currentDt = null;
+        for (const child of node.childNodes) {
+          if (child.nodeType !== Node.ELEMENT_NODE) continue;
+          if (child.tagName === 'DT') {
+            // Save previous item if any
+            if (currentDt !== null) items.push(currentDt);
+            currentDt = child.textContent.trim();
+          } else if (child.tagName === 'DD' && currentDt !== null) {
+            const ddText = child.textContent.trim();
+            items.push(currentDt + '\n: ' + ddText.replace(/\n/g, '\n  '));
+            currentDt = null;
+          }
+        }
+        if (currentDt !== null) items.push(currentDt);
+        return '\n' + items.join('\n') + '\n';
+      },
+    });
+
+
+
+    // -----------------------------------------------------------------------
+    // Mermaid diagram blocks → ```mermaid
+    // -----------------------------------------------------------------------
     td.addRule('mermaid', {
       filter: (node) =>
         node.nodeName === 'PRE' && (
@@ -228,11 +415,65 @@
       replacement: (content) => '\n```mermaid\n' + content.trim() + '\n```\n',
     });
 
+    // -----------------------------------------------------------------------
+    // Math block → ```math
+    // -----------------------------------------------------------------------
     td.addRule('mathBlock', {
       filter: (node) => node.nodeName === 'PRE' && node.className.includes('language-math'),
       replacement: (content) => '\n```math\n' + content.trim() + '\n```\n',
     });
 
+    // -----------------------------------------------------------------------
+    // Video / Audio / Iframe → Markdown link
+    // -----------------------------------------------------------------------
+    td.addRule('embeddedMedia', {
+      filter: ['video', 'audio'],
+      replacement: (_content, node) => {
+        const src = node.getAttribute('src')
+          || node.querySelector('source')?.getAttribute('src')
+          || '';
+        if (!src) return '';
+        const title = node.getAttribute('title') || node.tagName.toLowerCase();
+        return `[${title}](${src})`;
+      },
+    });
+
+    td.addRule('iframe', {
+      filter: 'iframe',
+      replacement: (_content, node) => {
+        const src = node.getAttribute('src') || '';
+        if (!src) return '';
+        // Detect YouTube
+        const ytMatch = src.match(
+          /(?:youtube\.com\/embed\/|youtube\.com\/watch\?v=|youtu\.be\/)([a-zA-Z0-9_-]{11})/
+        );
+        if (ytMatch) {
+          return `[▶ YouTube: ${ytMatch[1]}](${src})`;
+        }
+        // Detect Vimeo
+        if (/player\.vimeo\.com\/video\//.test(src)) {
+          return `[▶ Vimeo](${src})`;
+        }
+        const title = node.getAttribute('title') || 'Embedded content';
+        return `[${title}](${src})`;
+      },
+    });
+
+    // -----------------------------------------------------------------------
+    // Inline code (<code> not inside <pre>) — ensure proper backtick escaping
+    // -----------------------------------------------------------------------
+    td.addRule('inlineCode', {
+      filter: (node) =>
+        node.nodeName === 'CODE' && node.hasAttribute('data-inline-code'),
+      replacement: (content) => {
+        const trimmed = content.trim();
+        // If content contains backticks, use double backticks
+        if (/`/.test(trimmed)) return '`` ' + trimmed + ' ``';
+        return '`' + trimmed + '`';
+      },
+    });
+
+    // Keep these inline tags as-is (Turndown will wrap in Markdown)
     td.keep(['kbd', 'mark', 'abbr', 'dfn', 'sub', 'sup', 'small']);
 
     return td;
@@ -262,30 +503,77 @@
     return '';
   }
 
-  function cleanMarkdown(md) {
-    const isMath = (s) => /\\\\|[{}]|\^|_|\\[a-zA-Z]+/.test(s);
-    return md
-      .replace(/&nbsp;/g, ' ')
-      .replace(/&amp;/g, '&')
-      .replace(/&lt;/g, '<')
-      .replace(/&gt;/g, '>')
-      .replace(/&quot;/g, '"')
-      .replace(/&#39;/g, "'")
-      .replace(/\$\$([\s\S]+?)\$\$/g, (_, body) => '\n```math\n' + body.trim() + '\n```\n')
-      .replace(/\$([^$\n\r]+?)\$/g, (_, body) => isMath(body) ? '`' + body + '`' : '\\$' + body + '\\$')
+  // ---------------------------------------------------------------------------
+  // Decode all HTML entities via the browser's DOM (full coverage)
+  // ---------------------------------------------------------------------------
+  function decodeEntities(str) {
+    if (!/&[#a-zA-Z0-9]+;/.test(str)) return str;
+    const doc = new DOMParser().parseFromString(str, 'text/html');
+    return doc.body.textContent || str;
+  }
+
+  // ---------------------------------------------------------------------------
+  // Heuristic: does a $…$ fragment look like real LaTeX math?
+  // ---------------------------------------------------------------------------
+  function looksLikeMath(s) {
+    const trimmed = s.trim();
+    if (trimmed.length < 2) return false;
+    if (/\\[a-zA-Z]+/.test(trimmed)) return true;  // \frac, \sum, \alpha…
+    if (/[{}]/.test(trimmed)) return true;          // { } braces
+    if (/[_^]/.test(trimmed)) return true;           // subscript/superscript
+    if (/\\\(|\\\)/.test(trimmed)) return true;      // \( \)
+    if (/\\\[|\\\]/.test(trimmed)) return true;      // \[ \]
+    return false;
+  }
+
+  // ---------------------------------------------------------------------------
+  // Normalize consecutive blank lines (max 2)
+  // ---------------------------------------------------------------------------
+  function normalizeBlankLines(text) {
+    return text
       .split('\n')
-      .map((l) => l.replace(/[ \t]+$/, ''))
-      .filter((l, i, arr) => {
-        if (l === '' && arr[i - 1] === '' && arr[i - 2] === '') return false;
-        return true;
-      })
-      .join('\n')
-      .replace(/\[\]\([^)]*\)\n?/g, '')
-      .replace(/\[( )?\]\([^)]*\)/g, '')
-      .replace(/!\[\]\([^)]*\)\n?/g, '')
-      .replace(/^>\s*$\n?/gm, '')
-      .replace(/\n{3,}/g, '\n\n')
-      .trim();
+      .reduce((acc, line) => {
+        const prev = acc[acc.length - 1];
+        const prev2 = acc[acc.length - 2];
+        if (line === '' && prev === '' && prev2 === '') return acc;
+        acc.push(line);
+        return acc;
+      }, [])
+      .join('\n');
+  }
+
+  // ---------------------------------------------------------------------------
+  // cleanMarkdown — post-processing pipeline with named steps
+  // ---------------------------------------------------------------------------
+  function cleanMarkdown(md) {
+    // Step 1: decode all HTML entities (single pass via DOMParser)
+    md = decodeEntities(md);
+
+    // Step 2: display math $$…$$ → ```math```
+    md = md.replace(/\$\$([\s\S]+?)\$\$/g, (_, body) => {
+      return '\n```math\n' + body.trim() + '\n```\n';
+    });
+
+    // Step 3: inline math $…$ → `…` or escaped \$…\$
+    md = md.replace(/\$([^$\n\r]+?)\$/g, (_, body) => {
+      return looksLikeMath(body) ? '`' + body.trim() + '`' : '\\$' + body.trim() + '\\$';
+    });
+
+    // Step 4: strip trailing whitespace per line
+    md = md.split('\n').map((l) => l.replace(/[ \t]+$/, '')).join('\n');
+
+    // Step 5: normalize blank lines (max 2 consecutive)
+    md = normalizeBlankLines(md);
+
+    // Step 6: remove empty link/image references, empty blockquotes
+    md = md
+      .replace(/\[\]\([^)]*\)\n?/g, '')       // []()
+      .replace(/\[( )?\]\([^)]*\)/g, '')       // [ ]() or [ ]()
+      .replace(/!\[\]\([^)]*\)\n?/g, '')       // ![]()
+      .replace(/^>\s*$\n?/gm, '')              // empty blockquote lines
+      .replace(/\n{3,}/g, '\n\n');             // max 1 blank line
+
+    return md.trim();
   }
 
   function convertToMarkdown(options) {

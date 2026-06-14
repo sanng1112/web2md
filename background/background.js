@@ -40,7 +40,7 @@ function getDefaultOptions() {
 
 function getSavedOptions(callback) {
   chrome.storage.local.get(['options'], (result) => {
-    const merged = Object.assign(getDefaultOptions(), result.options || {});
+    const merged = Object.assign({}, getDefaultOptions(), result.options || {});
     callback(merged);
   });
 }

@@ -1,0 +1,28 @@
+{
+  "name": "web2md",
+  "version": "1.0.0",
+  "description": "**Convert any web page to clean, structured Markdown — instantly.**",
+  "main": "index.js",
+  "directories": {
+    "lib": "lib",
+    "test": "test"
+  },
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/sanng1112/web2md.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/sanng1112/web2md/issues"
+  },
+  "homepage": "https://github.com/sanng1112/web2md#readme",
+  "dependencies": {
+    "jsdom": "^29.1.1",
+    "playwright": "^1.60.0"
+  }
+}
