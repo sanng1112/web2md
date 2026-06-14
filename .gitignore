@@ -4,3 +4,5 @@ node_modules/
 *.crx
 *.pem
 .commandcode/
+ANNG.md
+test/output.md

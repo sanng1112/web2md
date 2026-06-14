@@ -1,0 +1,208 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta property="og:title" content="Test Article: Web2md Conversion">
+  <meta property="og:description" content="A comprehensive test page for verifying Web2md HTML-to-Markdown conversion.">
+  <meta property="article:published_time" content="2026-06-14T10:00:00Z">
+  <link rel="canonical" href="https://example.com/test-article">
+  <title>Test Article: Web2md Conversion</title>
+  <style>
+    body { font-family: sans-serif; max-width: 800px; margin: auto; padding: 20px; }
+    .sidebar { background: #f0f0f0; padding: 10px; }      /* should be stripped */
+    .cookie-banner { background: yellow; }                 /* should be stripped */
+    .ad-container { background: red; }                     /* should be stripped */
+  </style>
+</head>
+<body>
+  <header>
+    <h1>Test Article: Web2md Conversion</h1>
+    <p class="byline">By Test Author | June 14, 2026</p>
+  </header>
+
+  <!-- Junk that should be removed -->
+  <nav class="sidebar">
+    <h3>Sidebar</h3>
+    <ul><li>Related link 1</li><li>Related link 2</li></ul>
+  </nav>
+  <div class="cookie-banner">This site uses cookies</div>
+  <div class="ad-container"><p>Advertisement</p></div>
+  <form><input type="hidden"></form>
+
+  <!-- Main content -->
+  <main>
+    <!-- 1. Headings -->
+    <section>
+      <h2>1. Headings Test</h2>
+      <h3>Sub-heading Level 3</h3>
+      <h4>Sub-heading Level 4</h4>
+      <p>Regular paragraph text with <strong>bold</strong>, <em>italic</em>,
+        <del>strikethrough</del>, and <mark>highlighted</mark> text.</p>
+    </section>
+
+    <!-- 2. Links -->
+    <section>
+      <h2>2. Links Test</h2>
+      <p><a href="https://example.com">Normal link</a></p>
+      <p><a href="https://example.com" title="Example Title">Link with title</a></p>
+      <p><a href="/relative/path">Relative link</a> (should become absolute)</p>
+      <p><a href="#section">Anchor link</a> (should be skipped)</p>
+      <p><a href="javascript:void(0)">JavaScript link</a> (should show as text)</p>
+    </section>
+
+    <!-- 3. Images -->
+    <section>
+      <h2>3. Images Test</h2>
+      <p><img src="https://example.com/image.jpg" alt="A test image"></p>
+      <p><img src="https://example.com/photo.png" alt="Photo" title="Photo caption"></p>
+      <p><img src="/relative/img.png" alt="Relative image"> (should be absolute)</p>
+      <figure>
+        <img src="https://example.com/figure.png" alt="Figure image">
+        <figcaption>This is a figure caption</figcaption>
+      </figure>
+    </section>
+
+    <!-- 4. Code Blocks -->
+    <section>
+      <h2>4. Code Blocks Test</h2>
+      <pre><code class="language-javascript">function hello() {
+  console.log("Hello, World!");
+}</code></pre>
+      <pre><code class="language-python" data-language="python">def greet(name):
+    return f"Hello, {name}!"</code></pre>
+      <p>Inline code: <code>console.log()</code> and <code>npm install</code>.</p>
+      <p>Backtick code: <code>`escaped` backticks</code> in inline code.</p>
+    </section>
+
+    <!-- 5. Tables -->
+    <section>
+      <h2>5. Tables Test</h2>
+      <table>
+        <thead>
+          <tr>
+            <th align="left">Name</th>
+            <th align="center">Type</th>
+            <th align="right">Price</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>Widget A</td>
+            <td>Standard</td>
+            <td>$10.00</td>
+          </tr>
+          <tr>
+            <td>Widget B</td>
+            <td>Premium</td>
+            <td>$25.00</td>
+          </tr>
+        </tbody>
+      </table>
+    </section>
+
+    <!-- 6. Lists -->
+    <section>
+      <h2>6. Lists Test</h2>
+      <h3>Unordered</h3>
+      <ul>
+        <li>Item one</li>
+        <li>Item two</li>
+        <li>Nested list:
+          <ul>
+            <li>Sub-item A</li>
+            <li>Sub-item B</li>
+          </ul>
+        </li>
+      </ul>
+      <h3>Ordered</h3>
+      <ol>
+        <li>First step</li>
+        <li>Second step</li>
+        <li>Third step</li>
+      </ol>
+    </section>
+
+    <!-- 7. Task List -->
+    <section>
+      <h2>7. Task List Test</h2>
+      <ul>
+        <li><input type="checkbox" checked> Completed task</li>
+        <li><input type="checkbox"> Pending task</li>
+      </ul>
+    </section>
+
+    <!-- 8. Blockquotes -->
+    <section>
+      <h2>8. Blockquotes Test</h2>
+      <blockquote>
+        <p>This is a blockquote with <strong>nested formatting</strong>.</p>
+        <p>Multiple paragraphs in a blockquote.</p>
+      </blockquote>
+    </section>
+
+    <!-- 9. Definition List -->
+    <section>
+      <h2>9. Definition List Test</h2>
+      <dl>
+        <dt>HTML</dt>
+        <dd>HyperText Markup Language</dd>
+        <dt>CSS</dt>
+        <dd>Cascading Style Sheets</dd>
+      </dl>
+    </section>
+
+    <!-- 10. Mermaid -->
+    <section>
+      <h2>10. Mermaid Test</h2>
+      <pre class="mermaid">graph TD;
+    A-->B;
+    A-->C;
+    B-->D;
+    C-->D;</pre>
+    </section>
+
+    <!-- 11. Math / LaTeX -->
+    <section>
+      <h2>11. Math Test</h2>
+      <p>Inline math: $E = mc^2$</p>
+      <p>Display math: $$\sum_{n=1}^{\infty} \frac{1}{n^2} = \frac{\pi^2}{6}$$</p>
+    </section>
+
+    <!-- 12. Details / Summary -->
+    <section>
+      <h2>12. Details Test</h2>
+      <details>
+        <summary>Click to expand</summary>
+        <p>Hidden content revealed.</p>
+      </details>
+    </section>
+
+    <!-- 13. Video / Audio / Iframe -->
+    <section>
+      <h2>13. Embedded Media Test</h2>
+      <video src="https://example.com/video.mp4" title="Sample video"></video>
+      <audio src="https://example.com/audio.mp3" title="Sample audio"></audio>
+      <iframe src="https://www.youtube.com/embed/dQw4w9WgXcQ" title="YouTube video"></iframe>
+    </section>
+
+    <!-- 14. Hidden elements (should be removed) -->
+    <div style="display:none">This should not appear</div>
+    <div hidden>This should not appear either</div>
+
+    <!-- 15. Empty elements (should be removed) -->
+    <p></p>
+    <div></div>
+    <p>    </p>
+  </main>
+
+  <!-- More junk -->
+  <footer>
+    <p>&copy; 2026 Test</p>
+  </footer>
+  <div class="social-share">Share buttons</div>
+  <div class="comments">Comments section</div>
+  <div class="newsletter">Subscribe here</div>
+  <div class="pagination">1 2 3 ...</div>
+</body>
+</html>
