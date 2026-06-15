@@ -1,48 +1,46 @@
 # Web2md
 
-**Convert any web page to clean, structured Markdown — instantly.**
+Convert any web page to clean, structured Markdown. Instantly.
 
 [![Version](https://img.shields.io/badge/version-1.3.0-blue)](https://github.com/sanng1112/web2md/releases)
 [![License](https://img.shields.io/badge/license-MIT-green)](LICENSE)
 [![Chrome](https://img.shields.io/badge/platform-Chrome-4285F4?logo=googlechrome&logoColor=white)](https://chrome.google.com/webstore)
 [![Tests](https://img.shields.io/badge/tests-47/47-passing-brightgreen)](test/test-conversion.mjs)
-[![Built with ANNG](https://img.shields.io/badge/built%20with-ANNG-8B5CF6?logo=data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIyNCIgaGVpZ2h0PSIyNCIgdmlld0JveD0iMCAwIDI0IDI0IiBmaWxsPSJub25lIiBzdHJva2U9IndoaXRlIiBzdHJva2Utd2lkdGg9IjIiIHN0cm9rZS1saW5lY2FwPSJyb3VuZCIgc3Ryb2tlLWxpbmVqb2luPSJyb3VuZCI+PHBhdGggZD0iTTEyIDJMMiA3bDEwIDUgMTAtNS0xMC01eiIvPjxwYXRoIGQ9Ik0yIDE3bDEwIDUgMTAtNSIvPjxwYXRoIGQ9Ik0yIDEybDEwIDUgMTAtNSIvPjwvc3ZnPg==)](https://github.com/sanng1112/Anng_cli)
+[![Built by ANNG](https://img.shields.io/badge/built%20by-ANNG-8B5CF6?logo=data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIyNCIgaGVpZ2h0PSIyNCIgdmlld0JveD0iMCAwIDI0IDI0IiBmaWxsPSJub25lIiBzdHJva2U9IndoaXRlIiBzdHJva2Utd2lkdGg9IjIiIHN0cm9rZS1saW5lY2FwPSJyb3VuZCIgc3Ryb2tlLWxpbmVqb2luPSJyb3VuZCI+PHBhdGggZD0iTTEyIDJMMiA3bDEwIDUgMTAtNS0xMC01eiIvPjxwYXRoIGQ9Ik0yIDE3bDEwIDUgMTAtNSIvPjxwYXRoIGQ9Ik0yIDEybDEwIDUgMTAtNSIvPjwvc3ZnPg==)](https://github.com/sanng1112/Anng_cli)
 
 ---
 
-## ✨ Features
+## Features
 
-| Feature | Description |
-|---|---|
-| **One-click conversion** | Click the extension icon or press `Ctrl+Shift+M` / `Cmd+Shift+M` |
-| **Smart extraction** | Mozilla Readability identifies and extracts the main article, stripping navigation, ads, and sidebars |
-| **YAML frontmatter** | Auto-generates metadata block (title, source, description, date, image) |
-| **Dual modes** | Smart Extract (Readability) for clean article text, Raw mode for full-page fidelity |
-| **Dark mode** | Toggle light/dark theme, persisted across sessions |
-| **Selection mode** | Right-click any selected text → Convert to Markdown with frontmatter |
-| **Table support** | Preserves HTML tables as Markdown pipe tables |
-| **Code blocks** | Detects language class on `<pre><code>` and adds fenced code blocks with language tag |
-| **Image control** | Optionally include or exclude images from output |
-| **Absolute URLs** | Resolves relative links and images to absolute URLs |
-| **Multiple export formats** | Download as `.md`, `.html`, or `.txt` |
-| **Auto-copy** | Optionally copies to clipboard immediately after conversion |
-| **Word count** | Real-time char/word/read-time stats |
-| **Mermaid diagrams** | Auto-detects and preserves Mermaid diagram blocks as fenced code |
-| **MathJax / LaTeX** | Detects and preserves `$$...$$` display math and `$...$` inline math |
-| **Custom CSS selector** | Specify a precise element to extract (Raw mode) |
-| **History** | Saves last 10 conversions locally for quick recall |
-| **Batch tab conversion** | Convert multiple open tabs at once, merged into a single file |
+- **One-click conversion** -- Click the extension icon or press `Ctrl+Shift+M` / `Cmd+Shift+M`
+- **Smart extraction** -- Mozilla Readability identifies and extracts the main article, stripping navigation, ads, and sidebars
+- **YAML frontmatter** -- Auto-generates metadata block (title, source, description, date, image)
+- **Dual modes** -- Smart Extract (Readability) for clean article text, Raw mode for full-page fidelity
+- **Dark mode** -- Toggle light/dark theme, persisted across sessions
+- **Selection mode** -- Right-click any selected text to convert to Markdown with frontmatter
+- **Table support** -- Preserves HTML tables as Markdown pipe tables
+- **Code blocks** -- Detects language class on `<pre><code>` and adds fenced code blocks with language tag
+- **Image control** -- Optionally include or exclude images from output
+- **Absolute URLs** -- Resolves relative links and images to absolute URLs
+- **Multiple export formats** -- Download as `.md`, `.html`, or `.txt`
+- **Auto-copy** -- Optionally copies to clipboard immediately after conversion
+- **Word count** -- Real-time char/word/read-time stats
+- **Mermaid diagrams** -- Auto-detects and preserves Mermaid diagram blocks as fenced code
+- **MathJax / LaTeX** -- Detects and preserves `$$...$$` display math and `$...$` inline math
+- **Custom CSS selector** -- Specify a precise element to extract (Raw mode)
+- **History** -- Saves last 10 conversions locally for quick recall
+- **Batch tab conversion** -- Convert multiple open tabs at once, merged into a single file
 
 ---
 
-## 🚀 Quick Start
+## Quick Start
 
 ### Install from source (developer mode)
 
 ```bash
 git clone https://github.com/sanng1112/web2md.git
 cd web2md
-npm install        # installs jsdom + playwright for testing
+npm install
 ```
 
 1. Open Chrome and go to `chrome://extensions/`
@@ -53,15 +51,15 @@ npm install        # installs jsdom + playwright for testing
 ### Run tests
 
 ```bash
-npm test                            # Unit tests (Node.js + jsdom) — 47 tests
-node test/test-e2e.mjs              # E2E tests (Playwright) — requires browser
+npm test                              # Unit tests (Node.js + jsdom) -- 47 tests
+node test/test-e2e.mjs                # E2E tests (Playwright) -- requires Chromium
 ```
 
-> **Note:** E2E tests require Chromium. Install with `npx playwright install chromium`.
+> Note: E2E tests require Chromium. Install with `npx playwright install chromium`.
 
 ---
 
-## 📖 Usage
+## Usage
 
 ### Basic conversion
 
@@ -74,16 +72,15 @@ node test/test-e2e.mjs              # E2E tests (Playwright) — requires browse
 
 | Mode | When to use |
 |---|---|
-| **Smart Extract** (Readability) | Articles, blog posts, documentation — removes nav, ads, sidebars |
-| **Raw HTML** | Any page where you want full fidelity — including headers, footers, navigation |
+| **Smart Extract** (Readability) | Articles, blog posts, documentation -- removes nav, ads, sidebars |
+| **Raw HTML** | Any page where you want full fidelity -- including headers, footers, navigation |
 
 ### Batch conversion
 
 1. Open the extension popup
 2. Scroll to the **Batch** section
 3. Check the tabs you want to convert
-4. Click **Convert All** — results merge into a single Markdown file
-5. Separated by `---` with source URLs preserved
+4. Click **Convert All** -- results merge into a single Markdown file, separated by `---` with source URLs preserved
 
 ### Keyboard shortcut
 
@@ -93,30 +90,30 @@ Customize at `chrome://extensions/shortcuts`
 
 ### Right-click menu
 
-- **Convert page to Markdown** — converts the entire page
-- **Convert selection to Markdown** — converts only the selected text
+- **Convert page to Markdown** -- converts the entire page
+- **Convert selection to Markdown** -- converts only the selected text
 
 ---
 
-## 🏗 Architecture
+## Architecture
 
 ```
 User action (icon / hotkey / right-click)
-        │
-        ▼
+        |
+        v
 background.js (Service Worker)
-        │  chrome.scripting.executeScript (lazy inject if needed)
-        │  chrome.tabs.sendMessage → { action: 'convert' }
-        ▼
-content.js (IIFE — runs in page context)
-        │  getPageMetadata()
-        │  extractWithReadability() / extractRaw()
-        │  normalizeDom() — strips junk, preserves code/math/mermaid
-        │  buildTurndownService() — custom rules for links, images, tables
-        │  cleanMarkdown() — post-process math, trailing spaces
-        │  buildHeader() — YAML frontmatter
-        ▼
-    Markdown → clipboard + popup preview
+        |  chrome.scripting.executeScript (lazy inject if needed)
+        |  chrome.tabs.sendMessage -> { action: 'convert' }
+        v
+content.js (IIFE -- runs in page context)
+        |  getPageMetadata()
+        |  extractWithReadability() / extractRaw()
+        |  normalizeDom() -- strips junk, preserves code/math/mermaid
+        |  buildTurndownService() -- custom rules for links, images, tables
+        |  cleanMarkdown() -- post-process math, trailing spaces
+        |  buildHeader() -- YAML frontmatter
+        v
+    Markdown -> clipboard + popup preview
 ```
 
 ### Key modules
@@ -124,8 +121,8 @@ content.js (IIFE — runs in page context)
 | Module | File | Lines | Responsibility |
 |---|---|---|---|
 | **Background** | `background/background.js` | 162 | Service worker, context menus, keyboard shortcuts, clipboard |
-| **Content script** | `content/content.js` | 641 | Core conversion engine — extraction, normalization, Turndown, cleaning |
-| **Popup** | `popup/popup.js` | 413 | UI logic — options, preview, download, batch, history |
+| **Content script** | `content/content.js` | 641 | Core conversion engine -- extraction, normalization, Turndown, cleaning |
+| **Popup** | `popup/popup.js` | 413 | UI logic -- options, preview, download, batch, history |
 | **Styles** | `popup/popup.css` | 433 | Dark/light mode with CSS variables |
 | **Popup markup** | `popup/popup.html` | 126 | Extension popup layout |
 | **Publish script** | `scripts/publish.mjs` | 145 | Version bump, zip, git tag automation |
@@ -134,12 +131,12 @@ content.js (IIFE — runs in page context)
 
 | Library | File | Lines | Purpose |
 |---|---|---|---|
-| [Turndown.js](https://github.com/mixmark-io/turndown) v7.2.1 | `lib/turndown.js` | 974 | HTML → Markdown converter |
+| [Turndown.js](https://github.com/mixmark-io/turndown) v7.2.1 | `lib/turndown.js` | 974 | HTML to Markdown converter |
 | [Mozilla Readability](https://github.com/mozilla/readability) | `lib/readability.js` | 2,812 | Main content extraction engine |
 
 ---
 
-## 🧪 Testing
+## Testing
 
 | Suite | File | Type | How to run |
 |---|---|---|---|
@@ -149,25 +146,25 @@ content.js (IIFE — runs in page context)
 | **Fixture** | `test/test-fixture.html` | Test data | HTML with all supported elements |
 
 All 47 unit tests cover:
-- ✅ Headings, bold, italic, strikethrough
-- ✅ Links (external, relative, anchor, javascript)
-- ✅ Images (with alt, title, relative, figure + figcaption)
-- ✅ Code blocks (language class, data-language attr, inline code)
-- ✅ Tables (header, alignment, data cells)
-- ✅ Lists (unordered, ordered, nested, task lists)
-- ✅ Blockquotes, definition lists
-- ✅ Mermaid diagrams, MathJax/LaTeX
-- ✅ Details/summary, video, YouTube iframes
-- ✅ Junk removal (nav, footer, ads, sidebar, cookie banner, comments)
+- Headings, bold, italic, strikethrough
+- Links (external, relative, anchor, javascript)
+- Images (with alt, title, relative, figure + figcaption)
+- Code blocks (language class, data-language attr, inline code)
+- Tables (header, alignment, data cells)
+- Lists (unordered, ordered, nested, task lists)
+- Blockquotes, definition lists
+- Mermaid diagrams, MathJax/LaTeX
+- Details/summary, video, YouTube iframes
+- Junk removal (nav, footer, ads, sidebar, cookie banner, comments)
 
 ---
 
-## 🔧 Tech Stack
+## Tech Stack
 
 | Technology | Usage |
 |---|---|
 | **Chrome Extension Manifest V3** | Extension architecture |
-| **Turndown.js** v7.2.1 | HTML → Markdown conversion |
+| **Turndown.js** v7.2.1 | HTML to Markdown conversion |
 | **Mozilla Readability** | Content extraction |
 | **jsdom** ^29.x | Unit testing |
 | **Playwright** ^1.60 | E2E testing |
@@ -177,25 +174,7 @@ All 47 unit tests cover:
 
 ---
 
-## 🗺 Roadmap
-
-- [x] Smart extraction with Mozilla Readability
-- [x] Dark mode with CSS variables
-- [x] Export formats: .md, .html, .txt
-- [x] Image toggle and word count stats
-- [x] Auto-save conversion history (last 10)
-- [x] Mermaid diagram detection & preservation
-- [x] Custom CSS selector for targeted extraction
-- [x] Batch tab conversion
-- [x] MathJax / LaTeX preservation
-- [x] CI/CD with GitHub Actions
-- [x] E2E tests with Playwright
-- [ ] Firefox extension port
-- [ ] Chrome Web Store release
-
----
-
-## 🔒 Privacy
+## Privacy
 
 Web2md operates entirely **client-side**. No data is ever collected, transmitted, or stored on any server. The extension processes HTML content directly in your browser's active tab.
 
@@ -213,30 +192,28 @@ Web2md operates entirely **client-side**. No data is ever collected, transmitted
 
 ---
 
-## 🤖 Built with ANNG
+## Built by ANNG
 
-This project was developed with the assistance of **[ANNG CLI](https://github.com/sanng1112/Anng_cli)** — an AI-powered autonomous coding agent that helps with code generation, debugging, refactoring, and project management directly in the terminal.
+This project was developed with the assistance of **[ANNG CLI](https://github.com/sanng1112/Anng_cli)** -- an AI-powered autonomous coding agent that handles code generation, debugging, refactoring, and project management directly in the terminal.
 
-ANNG assists by:
+ANNG was responsible for:
 - Writing and refactoring code across the entire codebase
 - Running tests and fixing failures in a tight feedback loop
 - Managing Git workflow (commits, PRs, tagging releases)
 - Generating documentation and workspace maps
-- Providing production-readiness audits before releases
-
-> *"ANNG is not a copilot — it's an autonomous engineer that plans, executes, and verifies."*
+- Conducting production-readiness audits before releases
 
 ---
 
-## 📄 License
+## License
 
-MIT © [sanng1112](https://github.com/sanng1112)
+MIT (c) [sanng1112](https://github.com/sanng1112)
 
 ---
 
-## 🙏 Contributing
+## Contributing
 
-Contributions are welcome! Please feel free to submit a Pull Request.
+Contributions are welcome. Please feel free to submit a Pull Request.
 
 1. Fork the repo
 2. Create your feature branch (`git checkout -b feat/amazing-feature`)
@@ -251,12 +228,12 @@ git clone https://github.com/sanng1112/web2md.git
 cd web2md
 npm install
 npm test              # Run unit tests
-npm run lint          # Check code style (if ESLint is configured globally)
+npm run lint          # Check code style
 ```
 
 ---
 
-## 📬 Contact
+### Contact
 
 - **Author:** sanng1112
 - **GitHub:** [github.com/sanng1112](https://github.com/sanng1112)
