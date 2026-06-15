@@ -612,6 +612,55 @@
     };
   }
 
+  // ---------------------------------------------------------------------------
+  // Toast notification — visible feedback on the page
+  // ---------------------------------------------------------------------------
+  function showToast(message, type) {
+    const existing = document.getElementById('web2md-toast');
+    if (existing) existing.remove();
+
+    const toast = document.createElement('div');
+    toast.id = 'web2md-toast';
+
+    const bg = type === 'error' ? '#e53935' : type === 'warning' ? '#ff9800' : '#4caf50';
+    const icon = type === 'error' ? '\u2717' : type === 'warning' ? '\u26A0' : '\u2713';
+
+    toast.textContent = icon + ' ' + message;
+
+    Object.assign(toast.style, {
+      position: 'fixed',
+      top: '20px',
+      right: '20px',
+      padding: '12px 20px',
+      background: bg,
+      color: '#fff',
+      fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
+      fontSize: '14px',
+      fontWeight: '500',
+      borderRadius: '8px',
+      boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
+      zIndex: '2147483647',
+      maxWidth: '400px',
+      opacity: '0',
+      transform: 'translateY(-10px)',
+      transition: 'opacity 0.3s ease, transform 0.3s ease',
+      pointerEvents: 'none',
+    });
+
+    document.body.appendChild(toast);
+
+    requestAnimationFrame(() => {
+      toast.style.opacity = '1';
+      toast.style.transform = 'translateY(0)';
+    });
+
+    setTimeout(() => {
+      toast.style.opacity = '0';
+      toast.style.transform = 'translateY(-10px)';
+      setTimeout(() => toast.remove(), 300);
+    }, 3000);
+  }
+
   chrome.runtime.onMessage.addListener((request, _sender, sendResponse) => {
     if (request.action === 'convert') {
       try {
@@ -622,6 +671,8 @@
       }
     } else if (request.action === 'getTitle') {
       sendResponse({ title: document.title, url: window.location.href });
+    } else if (request.action === 'showToast') {
+      showToast(request.message, request.type || 'success');
     }
     return true;
   });

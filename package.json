@@ -8,7 +8,8 @@
     "test": "test"
   },
   "scripts": {
-    "test": "node test/test-conversion.mjs"
+    "test": "node test/test-conversion.mjs",
+    "lint": "eslint content/ background/ popup/"
   },
   "repository": {
     "type": "git",
@@ -28,6 +29,8 @@
   },
   "homepage": "https://github.com/sanng1112/web2md#readme",
   "devDependencies": {
+    "eslint": "^9.39.4",
+    "globals": "^17.6.0",
     "jsdom": "^29.1.1",
     "playwright": "^1.60.0"
   }

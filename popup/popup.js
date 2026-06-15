@@ -41,7 +41,7 @@
     els.status.textContent = msg || '';
     els.status.className = 'status' + (isError ? ' error' : '');
     if (msg) {
-      const timer = setTimeout(() => {
+      setTimeout(() => {
         if (els.status.textContent === msg) {
           els.status.textContent = '';
           els.status.className = 'status';

@@ -67,15 +67,20 @@ async function convertTab(tabId) {
         if (response?.success) {
           await copyToClipboard(response.markdown, tabId);
           showSuccessBadge(tabId);
+          showToastOnPage(tabId, 'Converted to Markdown! Copied to clipboard.', 'success');
+        } else {
+          showToastOnPage(tabId, response?.error || 'Conversion failed', 'error');
         }
       } catch (err) {
         console.error('Web2md conversion error:', err);
         showErrorBadge(tabId);
+        showToastOnPage(tabId, 'Conversion failed. Check console.', 'error');
       }
     });
   } catch (err) {
     console.error('Web2md script injection error:', err);
     showErrorBadge(tabId);
+    showToastOnPage(tabId, 'Conversion failed: script injection error', 'error');
   }
 }
 
@@ -121,10 +126,14 @@ async function convertSelection(tabId) {
     if (result) {
       await copyToClipboard(result, tabId);
       showSuccessBadge(tabId);
+      showToastOnPage(tabId, 'Selection converted to Markdown! Copied to clipboard.', 'success');
+    } else {
+      showToastOnPage(tabId, 'No text selected', 'warning');
     }
   } catch (err) {
     console.error('Web2md selection error:', err);
     showErrorBadge(tabId);
+    showToastOnPage(tabId, 'Selection conversion failed', 'error');
   }
 }
 
@@ -132,11 +141,52 @@ async function copyToClipboard(text, tabId) {
   try {
     await chrome.scripting.executeScript({
       target: { tabId },
-      func: (md) => navigator.clipboard.writeText(md),
+      func: (md) => {
+        // Try modern clipboard API first
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+          return navigator.clipboard.writeText(md).catch(() => {
+            // Fallback: execCommand
+            const ta = document.createElement('textarea');
+            ta.value = md;
+            ta.style.position = 'fixed';
+            ta.style.left = '-9999px';
+            ta.style.top = '0';
+            document.body.appendChild(ta);
+            ta.select();
+            document.execCommand('copy');
+            document.body.removeChild(ta);
+          });
+        } else {
+          // Fallback: execCommand
+          const ta = document.createElement('textarea');
+          ta.value = md;
+          ta.style.position = 'fixed';
+          ta.style.left = '-9999px';
+          ta.style.top = '0';
+          document.body.appendChild(ta);
+          ta.select();
+          document.execCommand('copy');
+          document.body.removeChild(ta);
+        }
+      },
       args: [text],
     });
   } catch (e) {
     console.error('Clipboard write error:', e);
+    throw e;
+  }
+}
+
+async function showToastOnPage(tabId, message, type) {
+  try {
+    await chrome.tabs.sendMessage(tabId, {
+      action: 'showToast',
+      message: message,
+      type: type || 'success',
+    });
+  } catch (err) {
+    // Content script might not be ready yet — non-critical
+    console.debug('Toast not shown:', err.message);
   }
 }
 
