@@ -36,6 +36,10 @@ Most "Save as Markdown" tools give you a noisy dump of the entire page — navig
 
 Web2md runs **entirely in your browser**. No data is ever sent to any server. No analytics. No tracking. Your web content stays on your machine.
 
+### Built with ANNG
+
+Web2md was developed with [ANNG CLI](https://github.com/sanng1112/Anng_cli) — an AI-powered autonomous coding agent. ANNG assisted with code generation, testing, debugging, and project management throughout development.
+
 ---
 
 ## Permissions explained

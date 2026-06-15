@@ -2,7 +2,7 @@
   "manifest_version": 3,
   "name": "Web2md",
   "version": "1.3.0",
-  "description": "Convert any web page to clean Markdown, keeping max context — links, images, tables, code blocks, headings.",
+  "description": "Convert any web page to clean Markdown — links, images, tables, code blocks, headings. Built with ANNG.",
   "permissions": [
     "activeTab",
     "tabs",
