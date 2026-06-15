@@ -78,14 +78,21 @@
   }
 
   function updateStats(md) {
+    const charEl = document.getElementById('statChars');
+    const wordEl = document.getElementById('statWords');
+    const readEl = document.getElementById('statReadTime');
     if (!md) {
-      els.stats.textContent = '0 chars | 0 words | ~0 min read';
+      if (charEl) charEl.textContent = '0';
+      if (wordEl) wordEl.textContent = '0';
+      if (readEl) readEl.textContent = '~0';
       return;
     }
     const chars = md.length;
     const words = md.split(/\s+/).filter(Boolean).length;
     const minutes = Math.max(1, Math.ceil(words / 200));
-    els.stats.textContent = `${chars.toLocaleString()} chars | ${words.toLocaleString()} words | ~${minutes} min read`;
+    if (charEl) charEl.textContent = chars.toLocaleString();
+    if (wordEl) wordEl.textContent = words.toLocaleString();
+    if (readEl) readEl.textContent = '~' + minutes;
   }
 
   function loadHistory() {

@@ -9,21 +9,21 @@
   <body>
     <div class="container">
       <header class="header">
-        <h1 class="logo">Web2md</h1>
+        <h1 class="logo"><span class="logo-icon">&#9881;</span> Web2md</h1>
         <div class="header-right">
           <button id="btnTheme" class="btn-icon" title="Toggle dark mode">&#9790;</button>
-          <span class="version">v1.3</span>
+          <span class="badge-version">&#9733; v1.3</span>
         </div>
       </header>
 
       <div class="page-info">
-        <span class="label">Page:</span>
+        <span class="label"><span class="label-icon">&#128279;</span> Page:</span>
         <span class="title" id="pageTitle">Loading...</span>
       </div>
 
       <div class="options">
         <div class="option-group">
-          <span class="group-label">Extraction mode</span>
+          <span class="group-label"><span class="group-icon">&#9889;</span> Extraction mode</span>
           <label class="option radio">
             <input type="radio" name="extractionMode" value="readability" checked />
             <span>Smart extract (Readability)</span>
@@ -35,7 +35,7 @@
         </div>
 
         <div class="option-group" id="selectorGroup" style="display: none">
-          <span class="group-label">Custom selector</span>
+          <span class="group-label"><span class="group-icon">&#128269;</span> Custom selector</span>
           <div class="selector-row">
             <input
               type="text"
@@ -52,7 +52,7 @@
         </div>
 
         <div class="option-group">
-          <span class="group-label">Output options</span>
+          <span class="group-label"><span class="group-icon">&#9881;</span> Output options</span>
           <label class="option">
             <input type="checkbox" id="optFrontmatter" checked />
             <span>YAML frontmatter</span>
@@ -109,11 +109,17 @@
 
       <div class="preview-container">
         <textarea id="preview" class="preview" placeholder="Markdown output will appear here..." readonly></textarea>
-        <div class="stats" id="stats">0 chars | 0 words | ~0 min read</div>
+        <div class="stats" id="stats">
+          <span><span class="stat-value" id="statChars">0</span> chars</span>
+          <span class="stat-divider">|</span>
+          <span><span class="stat-value" id="statWords">0</span> words</span>
+          <span class="stat-divider">|</span>
+          <span><span class="stat-value" id="statReadTime">~0</span> min read</span>
+        </div>
       </div>
 
       <footer class="footer">
-        <small>Web2md &mdash; Web to Markdown Converter</small>
+        <small>Made with <span class="footer-heart">&#9829;</span> by Web2md &mdash; Web to Markdown Converter</small>
       </footer>
     </div>
     <script src="popup.js"></script>
