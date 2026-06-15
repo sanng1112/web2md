@@ -39,7 +39,7 @@
     results.appendChild(el);
   }
 
-  // Load turndown
+  // Load turndown + content.js sequentially
   function loadScript(url) {
     return new Promise((resolve, reject) => {
       const s = document.createElement('script');
@@ -50,306 +50,36 @@
     });
   }
 
-  // ---- Conversion functions (extracted from content.js) ----
-  function normalizeDom(el) {
-    var JUNK_SELECTORS = 'nav,footer,form,.sidebar,.side-bar,.widget,.aside,.ad,.ads,.advertisement,.ad-container,.social-share,.social-links,.share-buttons,.comments,#comments,.comment-section,.related-posts,.related-articles,.you-may-also-like,.breadcrumb,.breadcrumbs,.cookie-banner,.cookie-consent,#cookie-notice,.gdpr,.consent-banner,.newsletter,.subscribe,.signup-form,.pagination,.page-nav,.prev-next,.modal,.popup,.overlay,.lightbox';
-    var JUNK_TAGS_SEL = 'script,style,noscript,object,embed,svg';
-
-    el.querySelectorAll(JUNK_TAGS_SEL).forEach(function(n) { n.remove(); });
-    el.querySelectorAll(JUNK_SELECTORS).forEach(function(n) { n.remove(); });
-
-    var walker = document.createTreeWalker(el, NodeFilter.SHOW_ELEMENT | NodeFilter.SHOW_TEXT, null, false);
-    var toRemove = [];
-    var nodes = [];
-    while (walker.nextNode()) nodes.push(walker.currentNode);
-
-    for (var i = 0; i < nodes.length; i++) {
-      var n = nodes[i];
-      if (n.nodeType === Node.TEXT_NODE) continue;
-      var tag = n.tagName;
-
-      if (n.hasAttribute('hidden') || (n.style && (n.style.display === 'none' || n.style.visibility === 'hidden'))) {
-        toRemove.push(n); continue;
-      }
-
-      if (tag !== 'BR' && tag !== 'HR' && tag !== 'IMG' && tag !== 'INPUT' && tag !== 'WBR' && tag !== 'VIDEO' && tag !== 'AUDIO' && tag !== 'IFRAME') {
-        if (!n.textContent.trim() && !n.querySelector('img, video, audio, canvas, iframe')) {
-          toRemove.push(n); continue;
-        }
-      }
-
-      if (tag === 'BR') {
-        var next = n.nextSibling;
-        while (next && next.nodeType === Node.TEXT_NODE && !next.textContent.trim()) next = next.nextSibling;
-        if (next && next.nodeType === Node.ELEMENT_NODE && next.tagName === 'BR') {
-          toRemove.push(n);
-        }
-        continue;
-      }
-
-      if (tag === 'P' && n.children.length === 0 && !n.textContent.trim()) {
-        toRemove.push(n); continue;
-      }
-    }
-    toRemove.forEach(function(n) { n.remove(); });
-
-    el.querySelectorAll('pre code').forEach(function(code) {
-      var pre = code.parentElement;
-      if (pre.tagName !== 'PRE') return;
-      var lang = (code.className.match(/language-(\w+)/) || [])[1] || code.getAttribute('data-language') || pre.getAttribute('data-language') || pre.getAttribute('data-lang') || '';
-      code.className = 'language-' + lang;
-      pre.className = 'language-' + lang;
-    });
-
-    el.querySelectorAll('code').forEach(function(c) {
-      if (!c.closest('pre')) c.setAttribute('data-inline-code', '');
-    });
-
-    el.querySelectorAll('.mermaid, pre.mermaid, div.mermaid, [data-processed="true"].mermaid').forEach(function(m) {
-      var pre = document.createElement('pre');
-      pre.className = 'language-mermaid';
-      pre.textContent = m.textContent;
-      m.replaceWith(pre);
-    });
-
-    el.querySelectorAll('a[href]').forEach(function(a) {
-      var href = a.getAttribute('href');
-      if (!href || /^(https?:|mailto:|javascript:|#|data:)/.test(href)) return;
-      try { a.href = new URL(href, window.location.origin).href; } catch(e) {}
-    });
-
-    el.querySelectorAll('img[src]').forEach(function(img) {
-      if (!img.alt) img.alt = '';
-      var src = img.getAttribute('src');
-      if (!src || src.startsWith('http') || src.startsWith('data:')) return;
-      try { img.src = new URL(src, window.location.origin).href; } catch(e) {}
-    });
-
-    el.querySelectorAll('li input[type="checkbox"]').forEach(function(cb) {
-      var text = cb.checked ? '[x] ' : '[ ] ';
-      cb.replaceWith(document.createTextNode(text));
-    });
-  }
-
-  function buildTurndownService(options) {
-    var td = new TurndownService({
-      headingStyle: 'atx', hr: '---', bulletListMarker: '-',
-      codeBlockStyle: 'fenced', fence: '```',
-      emDelimiter: '*', strongDelimiter: '**',
-      linkStyle: 'inlined', linkReferenceStyle: 'full', preformattedCode: true,
-    });
-
-    td.addRule('links', {
-      filter: function(node) { return node.nodeName === 'A' && node.getAttribute('href'); },
-      replacement: function(content, node) {
-        var href = node.getAttribute('href');
-        if (!href || href === '#' || /^javascript:/.test(href)) return content;
-        var title = node.getAttribute('title');
-        return '[' + content + '](' + href + (title ? ' "' + title + '"' : '') + ')';
-      },
-    });
-
-    if (options.includeImages !== false) {
-      td.addRule('images', {
-        filter: 'img',
-        replacement: function(_c, node) {
-          var alt = node.getAttribute('alt') || '';
-          var src = node.getAttribute('src') || '';
-          var title = node.getAttribute('title') || '';
-          if (!src) return alt ? '[' + alt + ']' : '';
-          return '![' + alt + '](' + src + (title ? ' "' + title + '"' : '') + ')';
-        },
-      });
-    } else {
-      td.addRule('images', {
-        filter: 'img',
-        replacement: function(_c, node) {
-          var alt = node.getAttribute('alt') || '';
-          return alt ? '[📷 ' + alt + ']' : '';
-        },
-      });
-    }
-
-    td.addRule('figure', {
-      filter: 'figure',
-      replacement: function(content, node) {
-        var img = node.querySelector('img');
-        var cap = node.querySelector('figcaption');
-        if (img && cap) {
-          var alt = img.getAttribute('alt') || '';
-          var src = img.getAttribute('src') || '';
-          if (!src) return content;
-          return '![' + alt + '](' + src + ')\n*' + cap.textContent.trim() + '*\n';
-        }
-        return content;
-      },
-    });
-
-    td.addRule('strikethrough', {
-      filter: ['del', 's', 'strike'],
-      replacement: function(content) { return '~~' + content + '~~'; },
-    });
-
-    td.addRule('tableCell', {
-      filter: ['th', 'td'],
-      replacement: function(content) { return content.trim(); },
-    });
-
-    td.addRule('tableRow', {
-      filter: 'tr',
-      replacement: function(_c, node) {
-        var isHeader = node.parentNode && node.parentNode.nodeName === 'THEAD';
-        var cells = node.querySelectorAll('th, td');
-        var parts = Array.from(cells).map(function(cell) {
-          return (cell.textContent || '').trim() || ' ';
-        });
-        if (isHeader) {
-          var aligns = Array.from(cells).map(function(cell) {
-            var align = cell.getAttribute('align') || '';
-            return align === 'left' ? ':---' : align === 'center' ? ':---:' : align === 'right' ? '---:' : '---';
-          });
-          return '| ' + parts.join(' | ') + ' |\n| ' + aligns.join(' | ') + ' |\n';
-        }
-        return '| ' + parts.join(' | ') + ' |\n';
-      },
-    });
-
-    td.addRule('details', {
-      filter: 'details',
-      replacement: function(content, node) {
-        var summary = node.querySelector('summary');
-        var summaryText = summary ? '**' + summary.textContent.trim() + '**\n\n' : '';
-        if (summary) summary.remove();
-        return '\n' + summaryText + content.trim() + '\n\n';
-      },
-    });
-
-    td.addRule('definitionList', {
-      filter: 'dl',
-      replacement: function(_c, node) {
-        var items = [];
-        var currentDt = null;
-        node.childNodes.forEach(function(child) {
-          if (child.nodeType !== Node.ELEMENT_NODE) return;
-          if (child.tagName === 'DT') {
-            if (currentDt !== null) items.push(currentDt);
-            currentDt = child.textContent.trim();
-          } else if (child.tagName === 'DD' && currentDt !== null) {
-            items.push(currentDt + '\n: ' + child.textContent.trim());
-            currentDt = null;
-          }
-        });
-        if (currentDt !== null) items.push(currentDt);
-        return '\n' + items.join('\n') + '\n';
-      },
-    });
-
-    td.addRule('mermaid', {
-      filter: function(node) {
-        return node.nodeName === 'PRE' && (
-          node.className.indexOf('language-mermaid') >= 0 ||
-          /^(graph|flowchart|sequenceDiagram|classDiagram|stateDiagram|erDiagram|gantt|pie|gitGraph|mindmap|timeline|journey|quadrantChart|sankey|xychart|block|packet|architecture|kanban)\b/m.test(node.textContent.trim())
-        );
-      },
-      replacement: function(content) { return '\n```mermaid\n' + content.trim() + '\n```\n'; },
-    });
-
-    td.addRule('mathBlock', {
-      filter: function(node) { return node.nodeName === 'PRE' && node.className.indexOf('language-math') >= 0; },
-      replacement: function(content) { return '\n```math\n' + content.trim() + '\n```\n'; },
-    });
-
-    td.addRule('embeddedMedia', {
-      filter: ['video', 'audio'],
-      replacement: function(_c, node) {
-        var src = node.getAttribute('src') || (node.querySelector('source') ? node.querySelector('source').getAttribute('src') : '') || '';
-        if (!src) return '';
-        var title = node.getAttribute('title') || node.tagName.toLowerCase();
-        return '[' + title + '](' + src + ')';
-      },
-    });
-
-    td.addRule('iframe', {
-      filter: 'iframe',
-      replacement: function(_c, node) {
-        var src = node.getAttribute('src') || '';
-        if (!src) return '';
-        var ytMatch = src.match(/(?:youtube\.com\/embed\/|youtube\.com\/watch\?v=|youtu\.be\/)([a-zA-Z0-9_-]{11})/);
-        if (ytMatch) return '[▶ YouTube: ' + ytMatch[1] + '](' + src + ')';
-        if (/player\.vimeo\.com\/video\//.test(src)) return '[▶ Vimeo](' + src + ')';
-        var title = node.getAttribute('title') || 'Embedded content';
-        return '[' + title + '](' + src + ')';
-      },
-    });
-
-    td.addRule('inlineCode', {
-      filter: function(node) { return node.nodeName === 'CODE' && node.hasAttribute('data-inline-code'); },
-      replacement: function(content) {
-        var trimmed = content.trim();
-        if (/`/.test(trimmed)) return '`` ' + trimmed + ' ``';
-        return '`' + trimmed + '`';
-      },
-    });
-
-    td.keep(['kbd', 'mark', 'abbr', 'dfn', 'sub', 'sup', 'small']);
-    return td;
-  }
-
-  function cleanMarkdown(md) {
-    // Step 1: decode entities
-    if (/&[#a-zA-Z0-9]+;/.test(md)) {
-      var doc = new DOMParser().parseFromString(md, 'text/html');
-      md = doc.body.textContent || md;
-    }
-    // Step 2: display math
-    md = md.replace(/\$\$([\s\S]+?)\$\$/g, function(_, body) {
-      return '\n```math\n' + body.trim() + '\n```\n';
-    });
-    // Step 3: inline math  
-    md = md.replace(/\$([^$\n\r]+?)\$/g, function(_, body) {
-      var t = body.trim();
-      if (t.length >= 2 && (/\\[a-zA-Z]+/.test(t) || /[{}]/.test(t) || /[_^]/.test(t))) {
-        return '`' + t + '`';
-      }
-      return '\\$' + t + '\\$';
-    });
-    // Step 4: trailing whitespace
-    md = md.split('\n').map(function(l) { return l.replace(/[ \t]+$/, ''); }).join('\n');
-    // Step 5: normalize blanks
-    md = md.split('\n').reduce(function(acc, line) {
-      var prev = acc[acc.length - 1], prev2 = acc[acc.length - 2];
-      if (line === '' && prev === '' && prev2 === '') return acc;
-      acc.push(line); return acc;
-    }, []).join('\n');
-    // Step 6: cleanup
-    md = md.replace(/\[\]\([^)]*\)\n?/g, '').replace(/\[( )?\]\([^)]*\)/g, '');
-    md = md.replace(/!\[\]\([^)]*\)\n?/g, '').replace(/^>\s*$\n?/gm, '').replace(/\n{3,}/g, '\n\n');
-    return md.trim();
-  }
-
   // ---- Main test ----
+  // Use window.__web2md from content.js instead of duplicated conversion functions
   Promise.resolve()
     .then(function() {
       return loadScript('../lib/turndown.js');
     })
     .then(function() {
+      return loadScript('../content/content.js');
+    })
+    .then(function() {
+      // Conversion functions come from content.js via window.__web2md
+      const conv = window.__web2md;
+
       // 1. Extract main content
       var clone = document.body.cloneNode(true);
       var mainEl = clone.querySelector('main') || clone;
-      normalizeDom(mainEl);
+      conv.normalizeDom(mainEl);
 
       var wrapper = document.createElement('div');
       wrapper.innerHTML = mainEl.innerHTML;
 
-      var td = buildTurndownService({ includeImages: true });
-      var markdown = cleanMarkdown(td.turndown(wrapper));
+      var td = conv.buildTurndownService({ includeImages: true });
+      var markdown = conv.cleanMarkdown(td.turndown(wrapper));
 
       // Display output
       outputEl.textContent = markdown;
 
       // ---- Assertions ----
       check('Output is not empty', markdown.length > 100, 'got ' + markdown.length + ' chars');
-      check('Contains H2 heading', /Headings Test/.test(markdown));
+      check('Contains H2 heading', /1\\.? Headings Test/.test(markdown));
       check('Bold text **bold**', /\*\*bold\*\*/.test(markdown));
       check('Italic text italic', /\*italic\*/.test(markdown));
       check('Strikethrough ~~text~~', /~~strikethrough~~/.test(markdown));

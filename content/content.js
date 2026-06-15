@@ -44,9 +44,17 @@
       article = document.querySelector(selector);
     }
     if (!article) {
-      article = document.querySelector(
+      const candidates = document.querySelectorAll(
         'article, [role="main"], main, .post-content, .article-content, .entry-content, #content, .content, .markdown-body'
       );
+      // Pick the candidate with the most content
+      let best = null;
+      let bestLen = 0;
+      candidates.forEach((el) => {
+        const len = el.textContent.trim().length;
+        if (len > bestLen) { best = el; bestLen = len; }
+      });
+      article = best;
     }
     article = article ? article.cloneNode(true) : document.body.cloneNode(true);
     normalizeDom(article);
@@ -60,7 +68,6 @@
     // structural
     'nav', 'footer', 'form',
     '[role="navigation"]', '[role="banner"]', '[role="contentinfo"]', '[role="complementary"]',
-    '[aria-hidden="true"]',
     // sidebars & widgets
     '.sidebar', '.side-bar', '.widget', '.aside',
     // ads (exact matches only — avoid false positives)
@@ -89,7 +96,7 @@
 
   // Elements removed during raw extraction because Turndown handles them poorly.
   // These are only removed in extractRaw; Readability handles them internally.
-  const RAW_REMOVE_TAGS = new Set(['iframe', 'svg']);
+  const RAW_REMOVE_TAGS = new Set(['svg']);
 
   function isHidden(el) {
     if (el.hasAttribute('hidden')) return true;
@@ -108,6 +115,14 @@
   // DOM normalization (single tree-walker pass where possible)
   // ---------------------------------------------------------------------------
   function normalizeDom(el) {
+    // 0. Handle MathJax FIRST (before script removal)
+    el.querySelectorAll('script[type^="math/tex"]').forEach((m) => {
+      const pre = document.createElement('pre');
+      pre.className = 'language-math';
+      pre.textContent = m.textContent.replace(/^;\s*mode\s*=\s*display\s*/i, '').trim();
+      m.replaceWith(pre);
+    });
+
     // 1. Bulk-remove known junk by tag
     el.querySelectorAll(JUNK_TAGS_SEL).forEach((n) => n.remove());
 
@@ -197,13 +212,7 @@
       m.replaceWith(pre);
     });
 
-    // 7. MathJax script tags (<script type="math/tex">)
-    el.querySelectorAll('script[type^="math/tex"]').forEach((m) => {
-      const pre = document.createElement('pre');
-      pre.className = 'language-math';
-      pre.textContent = m.textContent.replace(/^;\s*mode\s*=\s*display\s*/i, '').trim();
-      m.replaceWith(pre);
-    });
+    // (MathJax handled in step 0 above — before script removal)
 
     // 8. Resolve relative URLs
     el.querySelectorAll('a[href]').forEach((a) => {
@@ -362,16 +371,22 @@
     });
 
     // -----------------------------------------------------------------------
-    // <details> / <summary> → collapse into plain text
+    // <details> / <summary> → summary in bold, then content
     // -----------------------------------------------------------------------
+    td.addRule('skipSummary', {
+      filter: 'summary',
+      replacement: () => '',
+    });
+
     td.addRule('details', {
       filter: 'details',
       replacement: (content, node) => {
         const summary = node.querySelector('summary');
-        const summaryText = summary ? '**' + summary.textContent.trim() + '**\n\n' : '';
-        // Remove summary from content since we handle it
-        if (summary) summary.remove();
-        return '\n' + summaryText + content.trim() + '\n\n';
+        const summaryText = summary ? summary.textContent.trim() : '';
+        if (summaryText) {
+          return '\n**' + summaryText + '**\n\n' + content.trim() + '\n\n';
+        }
+        return '\n' + content.trim() + '\n\n';
       },
     });
 
@@ -610,4 +625,17 @@
     }
     return true;
   });
+
+  // Expose internals for testing (jsdom / browser test runners)
+  if (typeof window !== 'undefined') {
+    window.__web2md = {
+      normalizeDom,
+      buildTurndownService,
+      cleanMarkdown,
+      getPageMetadata,
+      extractWithReadability,
+      extractRaw,
+      convertToMarkdown,
+    };
+  }
 })();

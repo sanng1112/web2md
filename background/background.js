@@ -47,10 +47,17 @@ function getSavedOptions(callback) {
 
 async function convertTab(tabId) {
   try {
-    await chrome.scripting.executeScript({
-      target: { tabId },
-      files: ['lib/turndown.js', 'content/content.js'],
-    });
+    // Content scripts are injected via manifest.json for all URLs.
+    // Only inject on-demand if the tab was opened before extension install.
+    try {
+      await chrome.tabs.sendMessage(tabId, { action: 'getTitle' });
+    } catch {
+      await chrome.scripting.executeScript({
+        target: { tabId },
+        files: ['lib/turndown.js', 'content/content.js'],
+      });
+    }
+
     getSavedOptions(async (options) => {
       try {
         const response = await chrome.tabs.sendMessage(tabId, {

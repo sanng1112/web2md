@@ -161,6 +161,15 @@
     for (let i = 0; i < ids.length; i++) {
       try {
         const tab = await chrome.tabs.get(ids[i]);
+        // Check if content script is alive; inject on-demand if not
+        try {
+          await chrome.tabs.sendMessage(ids[i], { action: 'getTitle' });
+        } catch {
+          await chrome.scripting.executeScript({
+            target: { tabId: ids[i] },
+            files: ['lib/turndown.js', 'lib/readability.js', 'content/content.js'],
+          });
+        }
         const response = await chrome.tabs.sendMessage(ids[i], { action: 'convert', options: getOptions() });
         if (response?.success) {
           parts.push('## ' + (tab.title || 'Untitled') + '\n\n> Source: ' + tab.url + '\n\n' + response.markdown);
@@ -168,8 +177,9 @@
           failed++;
           parts.push('## ' + (tab.title || 'Untitled') + '\n\n> Source: ' + tab.url + '\n\n_Conversion failed: ' + (response?.error || 'unknown') + '_\n');
         }
-      } catch (_) {
+      } catch (err) {
         failed++;
+        console.warn('[Web2md] batchConvert tab error:', err);
       }
     }
 

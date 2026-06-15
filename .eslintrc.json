@@ -1,0 +1,25 @@
+{
+  "env": {
+    "browser": true,
+    "es2022": true,
+    "node": true,
+    "webextensions": true
+  },
+  "globals": {
+    "chrome": "readonly",
+    "TurndownService": "readonly",
+    "NodeFilter": "readonly"
+  },
+  "rules": {
+    "no-unused-vars": ["warn", { "argsIgnorePattern": "^_" }],
+    "no-var": "error",
+    "prefer-const": "error",
+    "eqeqeq": ["error", "always"],
+    "curly": "error",
+    "no-throw-literal": "error",
+    "prefer-template": "warn",
+    "no-trailing-spaces": "warn",
+    "semi": ["warn", "always"],
+    "quotes": ["warn", "single", { "avoidEscape": true }]
+  }
+}

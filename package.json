@@ -1,27 +1,33 @@
 {
   "name": "web2md",
   "version": "1.0.0",
-  "description": "**Convert any web page to clean, structured Markdown — instantly.**",
-  "main": "index.js",
+  "description": "Chrome extension to convert any web page to clean, structured Markdown — instantly.",
+  "private": true,
   "directories": {
     "lib": "lib",
     "test": "test"
   },
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "node test/test-conversion.mjs"
   },
   "repository": {
     "type": "git",
     "url": "git+https://github.com/sanng1112/web2md.git"
   },
-  "keywords": [],
-  "author": "",
-  "license": "ISC",
+  "keywords": [
+    "chrome-extension",
+    "markdown",
+    "web-to-markdown",
+    "readability",
+    "turndown"
+  ],
+  "author": "sanng1112",
+  "license": "MIT",
   "bugs": {
     "url": "https://github.com/sanng1112/web2md/issues"
   },
   "homepage": "https://github.com/sanng1112/web2md#readme",
-  "dependencies": {
+  "devDependencies": {
     "jsdom": "^29.1.1",
     "playwright": "^1.60.0"
   }

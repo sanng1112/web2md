@@ -6,3 +6,4 @@ node_modules/
 .commandcode/
 ANNG.md
 test/output.md
+.eslintcache
