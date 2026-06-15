@@ -1,32 +1,61 @@
-import globals from 'globals';
+import globals from "globals";
 
 export default [
   {
-    ignores: ['lib/', 'node_modules/', 'test/', 'scripts/', 'store-assets/', 'eslint.config.mjs'],
+    ignores: [
+      "lib/",
+      "node_modules/",
+      "test/",
+      "store-assets/",
+      "eslint.config.mjs",
+    ],
   },
   {
+    files: ["**/*.js"],
     languageOptions: {
-      ecmaVersion: 2022,
-      sourceType: 'module',
+      ecmaVersion: "latest",
+      sourceType: "module",
       globals: {
         ...globals.browser,
         ...globals.webextensions,
-        chrome: 'readonly',
-        TurndownService: 'readonly',
-        Readability: 'readonly',
+        chrome: "readonly",
+        TurndownService: "readonly",
+        Readability: "readonly",
       },
     },
     rules: {
-      'no-unused-vars': [
-        'warn',
+      "no-unused-vars": [
+        "warn",
         {
-          args: 'none',
-          caughtErrors: 'none',
-          varsIgnorePattern: '^_',
+          args: "none",
+          caughtErrors: "none",
+          varsIgnorePattern: "^_",
         },
       ],
-      'no-undef': 'error',
-      'no-console': 'off',
+      "no-undef": "error",
+      "no-console": "off",
+    },
+  },
+  {
+    files: ["scripts/**/*.mjs"],
+    languageOptions: {
+      ecmaVersion: "latest",
+      sourceType: "module",
+      globals: {
+        ...globals.node,
+      },
+    },
+    rules: {
+      "no-unused-vars": [
+        "warn",
+        {
+          args: "none",
+          caughtErrors: "none",
+          varsIgnorePattern: "^_",
+        },
+      ],
+      "no-undef": "error",
+      "no-console": "off",
     },
   },
 ];

@@ -1,6 +1,6 @@
 {
   "name": "web2md",
-  "version": "1.0.0",
+  "version": "1.3.0",
   "description": "Chrome extension to convert any web page to clean, structured Markdown — instantly.",
   "private": true,
   "directories": {

@@ -23,7 +23,7 @@
   --header-gradient: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
 }
 
-[data-theme="dark"] {
+[data-theme='dark'] {
   --bg: #0d1117;
   --surface: #161b22;
   --surface2: #21262d;
@@ -84,9 +84,9 @@ body {
 .btn-icon {
   width: 26px;
   height: 26px;
-  border: 1px solid rgba(255,255,255,0.2);
+  border: 1px solid rgba(255, 255, 255, 0.2);
   border-radius: var(--radius);
-  background: rgba(255,255,255,0.1);
+  background: rgba(255, 255, 255, 0.1);
   color: #fff;
   cursor: pointer;
   font-size: 14px;
@@ -97,7 +97,7 @@ body {
 }
 
 .btn-icon:hover {
-  background: rgba(255,255,255,0.2);
+  background: rgba(255, 255, 255, 0.2);
 }
 
 .page-info {
@@ -166,11 +166,11 @@ body {
   color: var(--text);
 }
 
-.option input[type="checkbox"] {
+.option input[type='checkbox'] {
   accent-color: var(--accent);
 }
 
-.option input[type="radio"] {
+.option input[type='radio'] {
   accent-color: var(--accent);
 }
 
@@ -402,7 +402,7 @@ body {
   cursor: pointer;
 }
 
-.batch-tab input[type="checkbox"] {
+.batch-tab input[type='checkbox'] {
   margin: 0;
   accent-color: var(--accent);
   flex-shrink: 0;

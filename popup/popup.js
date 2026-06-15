@@ -100,7 +100,7 @@
 
   function saveHistory(entry) {
     let items = loadHistory();
-    items = items.filter(e => e.url !== entry.url);
+    items = items.filter((e) => e.url !== entry.url);
     items.unshift(entry);
     if (items.length > MAX_HISTORY) items = items.slice(0, MAX_HISTORY);
     localStorage.setItem(HISTORY_KEY, JSON.stringify(items));
@@ -175,7 +175,15 @@
           parts.push('## ' + (tab.title || 'Untitled') + '\n\n> Source: ' + tab.url + '\n\n' + response.markdown);
         } else {
           failed++;
-          parts.push('## ' + (tab.title || 'Untitled') + '\n\n> Source: ' + tab.url + '\n\n_Conversion failed: ' + (response?.error || 'unknown') + '_\n');
+          parts.push(
+            '## ' +
+              (tab.title || 'Untitled') +
+              '\n\n> Source: ' +
+              tab.url +
+              '\n\n_Conversion failed: ' +
+              (response?.error || 'unknown') +
+              '_\n',
+          );
         }
       } catch (err) {
         failed++;
@@ -190,7 +198,9 @@
     enableOutputButtons();
 
     if (els.optAutoCopy.checked) {
-      try { await navigator.clipboard.writeText(merged); } catch (_) {}
+      try {
+        await navigator.clipboard.writeText(merged);
+      } catch (_) {}
     }
 
     setStatus('✓ ' + (ids.length - failed) + ' tabs converted' + (failed ? ', ' + failed + ' failed' : ''));
@@ -216,6 +226,16 @@
     try {
       const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
       if (!tab) throw new Error('No active tab');
+
+      // Ensure content script is alive; inject on-demand if not
+      try {
+        await chrome.tabs.sendMessage(tab.id, { action: 'getTitle' });
+      } catch {
+        await chrome.scripting.executeScript({
+          target: { tabId: tab.id },
+          files: ['lib/turndown.js', 'lib/readability.js', 'content/content.js'],
+        });
+      }
 
       const response = await chrome.tabs.sendMessage(tab.id, {
         action: 'convert',
@@ -272,11 +292,12 @@
     const blob = new Blob([content], { type: mimeType + ';charset=utf-8' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
-    const safeName = (document.title || 'web2md-output')
-      .replace(/[^a-zA-Z0-9\u00C0-\u024F\u1E00-\u1EFF ]/g, '')
-      .trim()
-      .replace(/\s+/g, '-')
-      .toLowerCase() || 'web2md-output';
+    const safeName =
+      (document.title || 'web2md-output')
+        .replace(/[^a-zA-Z0-9\u00C0-\u024F\u1E00-\u1EFF ]/g, '')
+        .trim()
+        .replace(/\s+/g, '-')
+        .toLowerCase() || 'web2md-output';
     a.href = url;
     a.download = safeName + '.' + ext;
     a.click();
@@ -389,10 +410,14 @@
 
   els.btnLoadTabs.addEventListener('click', loadBatchTabs);
   els.btnSelectAll.addEventListener('click', () => {
-    els.batchList.querySelectorAll('.batch-check').forEach((c) => { c.checked = true; });
+    els.batchList.querySelectorAll('.batch-check').forEach((c) => {
+      c.checked = true;
+    });
   });
   els.btnDeselectAll.addEventListener('click', () => {
-    els.batchList.querySelectorAll('.batch-check').forEach((c) => { c.checked = false; });
+    els.batchList.querySelectorAll('.batch-check').forEach((c) => {
+      c.checked = false;
+    });
   });
   els.btnBatchConvert.addEventListener('click', batchConvert);
 
@@ -401,13 +426,13 @@
     if (!isNaN(idx)) selectHistoryItem(idx);
   });
 
-  ['optFrontmatter', 'optTitle', 'optSource', 'optImages', 'optAutoCopy'].forEach(id => {
+  ['optFrontmatter', 'optTitle', 'optSource', 'optImages', 'optAutoCopy'].forEach((id) => {
     document.getElementById(id).addEventListener('change', saveOptions);
   });
 
   els.optSelector.addEventListener('change', saveOptions);
 
-  els.extractionModeRadios.forEach(radio => {
+  els.extractionModeRadios.forEach((radio) => {
     radio.addEventListener('change', () => {
       toggleSelectorVisibility();
       saveOptions();

@@ -7,8 +7,10 @@
     const ogDesc = document.querySelector('meta[property="og:description"]');
     const ogImage = document.querySelector('meta[property="og:image"]');
     const published = document.querySelector('meta[property="article:published_time"]');
-    const favicon = document.querySelector('link[rel="icon"]')?.href ||
-                    document.querySelector('link[rel="shortcut icon"]')?.href || '';
+    const favicon =
+      document.querySelector('link[rel="icon"]')?.href ||
+      document.querySelector('link[rel="shortcut icon"]')?.href ||
+      '';
 
     return {
       title: ogTitle?.content || document.title || '',
@@ -45,14 +47,17 @@
     }
     if (!article) {
       const candidates = document.querySelectorAll(
-        'article, [role="main"], main, .post-content, .article-content, .entry-content, #content, .content, .markdown-body'
+        'article, [role="main"], main, .post-content, .article-content, .entry-content, #content, .content, .markdown-body',
       );
       // Pick the candidate with the most content
       let best = null;
       let bestLen = 0;
       candidates.forEach((el) => {
         const len = el.textContent.trim().length;
-        if (len > bestLen) { best = el; bestLen = len; }
+        if (len > bestLen) {
+          best = el;
+          bestLen = len;
+        }
       });
       article = best;
     }
@@ -66,29 +71,57 @@
   // ---------------------------------------------------------------------------
   const JUNK_SELECTORS = [
     // structural
-    'nav', 'footer', 'form',
-    '[role="navigation"]', '[role="banner"]', '[role="contentinfo"]', '[role="complementary"]',
+    'nav',
+    'footer',
+    'form',
+    '[role="navigation"]',
+    '[role="banner"]',
+    '[role="contentinfo"]',
+    '[role="complementary"]',
     // sidebars & widgets
-    '.sidebar', '.side-bar', '.widget', '.aside',
+    '.sidebar',
+    '.side-bar',
+    '.widget',
+    '.aside',
     // ads (exact matches only — avoid false positives)
-    '.ad', '.ads', '.advertisement', '.ad-container',
+    '.ad',
+    '.ads',
+    '.advertisement',
+    '.ad-container',
     // social
-    '.social-share', '.social-links', '.share-buttons',
+    '.social-share',
+    '.social-links',
+    '.share-buttons',
     // comments
-    '.comments', '#comments', '.comment-section',
+    '.comments',
+    '#comments',
+    '.comment-section',
     // related content
-    '.related-posts', '.related-articles', '.you-may-also-like',
+    '.related-posts',
+    '.related-articles',
+    '.you-may-also-like',
     // breadcrumbs
-    '.breadcrumb', '.breadcrumbs',
+    '.breadcrumb',
+    '.breadcrumbs',
     // cookie / GDPR
-    '.cookie-banner', '.cookie-consent', '#cookie-notice',
-    '.gdpr', '.consent-banner',
+    '.cookie-banner',
+    '.cookie-consent',
+    '#cookie-notice',
+    '.gdpr',
+    '.consent-banner',
     // newsletter / subscribe
-    '.newsletter', '.subscribe', '.signup-form',
+    '.newsletter',
+    '.subscribe',
+    '.signup-form',
     // pagination
-    '.pagination', '.page-nav', '.prev-next',
+    '.pagination',
+    '.page-nav',
+    '.prev-next',
     // modals / overlays
-    '.modal', '.popup', '.overlay', '.lightbox',
+    '.modal',
+    '.popup',
+    '.overlay',
+    '.lightbox',
   ];
 
   // Elements that are always removed regardless of content (junk)
@@ -151,7 +184,28 @@
       }
 
       // 3b. Collapse empty elements (no text content, no media children)
-      if (tag !== 'BR' && tag !== 'HR' && tag !== 'IMG' && tag !== 'INPUT' && tag !== 'WBR' && tag !== 'VIDEO' && tag !== 'AUDIO' && tag !== 'IFRAME') {
+      // NOTE: table elements (TD, TH, TR, TABLE, etc.) are excluded because
+      // empty cells are valid and removing them breaks table structure.
+      if (
+        tag !== 'BR' &&
+        tag !== 'HR' &&
+        tag !== 'IMG' &&
+        tag !== 'INPUT' &&
+        tag !== 'WBR' &&
+        tag !== 'VIDEO' &&
+        tag !== 'AUDIO' &&
+        tag !== 'IFRAME' &&
+        tag !== 'TABLE' &&
+        tag !== 'TR' &&
+        tag !== 'TD' &&
+        tag !== 'TH' &&
+        tag !== 'THEAD' &&
+        tag !== 'TBODY' &&
+        tag !== 'TFOOT' &&
+        tag !== 'CAPTION' &&
+        tag !== 'COLGROUP' &&
+        tag !== 'COL'
+      ) {
         if (!n.textContent.trim() && !n.querySelector('img, video, audio, canvas, iframe')) {
           toRemove.push(n);
           continue;
@@ -185,11 +239,12 @@
       const pre = code.parentElement;
       if (pre.tagName !== 'PRE') return;
       // Priority: class="language-*" > data-language > data-lang > none
-      const lang = code.className.match(/language-(\w+)/)?.[1]
-        || code.getAttribute('data-language')
-        || pre.getAttribute('data-language')
-        || pre.getAttribute('data-lang')
-        || '';
+      const lang =
+        code.className.match(/language-(\w+)/)?.[1] ||
+        code.getAttribute('data-language') ||
+        pre.getAttribute('data-language') ||
+        pre.getAttribute('data-lang') ||
+        '';
       // Keep the <code> child in place (Turndown's fencedCodeBlock rule
       // reads language from <code>.className), and also mirror to <pre>
       code.className = 'language-' + lang;
@@ -219,7 +274,9 @@
       const href = a.getAttribute('href');
       if (!href) return;
       if (/^(https?|mailto|javascript|#|data):/.test(href)) return;
-      try { a.href = new URL(href, window.location.origin).href; } catch (_) {}
+      try {
+        a.href = new URL(href, window.location.origin).href;
+      } catch (_) {}
     });
 
     el.querySelectorAll('img[src]').forEach((img) => {
@@ -227,7 +284,9 @@
       const src = img.getAttribute('src');
       if (!src) return;
       if (src.startsWith('http') || src.startsWith('data:')) return;
-      try { img.src = new URL(src, window.location.origin).href; } catch (_) {}
+      try {
+        img.src = new URL(src, window.location.origin).href;
+      } catch (_) {}
     });
 
     // 9. Task-list checkboxes — convert to [x] / [ ] text so Turndown
@@ -270,37 +329,39 @@
     // -----------------------------------------------------------------------
     // Images — toggle on/off; handle srcset (pick largest)
     // -----------------------------------------------------------------------
-    const imgRule = options.includeImages !== false
-      ? {
-          filter: 'img',
-          replacement: (_content, node) => {
-            const alt = node.getAttribute('alt') || '';
-            let src = node.getAttribute('src') || '';
-            // Prefer srcset largest candidate over plain src when available
-            const srcset = node.getAttribute('srcset');
-            if (srcset) {
-              const candidates = srcset.split(',')
-                .map((s) => s.trim().split(/\s+/))
-                .filter(([url]) => url && !url.startsWith('data:'))
-                .sort((a, b) => {
-                  const wa = parseInt(a[1]) || 0;
-                  const wb = parseInt(b[1]) || 0;
-                  return wb - wa; // largest first
-                });
-              if (candidates.length) src = candidates[0][0];
-            }
-            const title = node.getAttribute('title') || '';
-            if (!src) return alt ? `[${alt}]` : '';
-            return `![${alt}](${src}${title ? ` "${title}"` : ''})`;
-          },
-        }
-      : {
-          filter: 'img',
-          replacement: (_content, node) => {
-            const alt = node.getAttribute('alt') || '';
-            return alt ? `[📷 ${alt}]` : '';
-          },
-        };
+    const imgRule =
+      options.includeImages !== false
+        ? {
+            filter: 'img',
+            replacement: (_content, node) => {
+              const alt = node.getAttribute('alt') || '';
+              let src = node.getAttribute('src') || '';
+              // Prefer srcset largest candidate over plain src when available
+              const srcset = node.getAttribute('srcset');
+              if (srcset) {
+                const candidates = srcset
+                  .split(',')
+                  .map((s) => s.trim().split(/\s+/))
+                  .filter(([url]) => url && !url.startsWith('data:'))
+                  .sort((a, b) => {
+                    const wa = parseInt(a[1]) || 0;
+                    const wb = parseInt(b[1]) || 0;
+                    return wb - wa; // largest first
+                  });
+                if (candidates.length) src = candidates[0][0];
+              }
+              const title = node.getAttribute('title') || '';
+              if (!src) return alt ? `[${alt}]` : '';
+              return `![${alt}](${src}${title ? ` "${title}"` : ''})`;
+            },
+          }
+        : {
+            filter: 'img',
+            replacement: (_content, node) => {
+              const alt = node.getAttribute('alt') || '';
+              return alt ? `[📷 ${alt}]` : '';
+            },
+          };
 
     td.addRule('images', imgRule);
 
@@ -331,42 +392,104 @@
     });
 
     // -----------------------------------------------------------------------
-    // Table cells — strip extra whitespace for clean pipe tables
+    // Table block — ensure proper spacing around tables
     // -----------------------------------------------------------------------
-    td.addRule('tableCell', {
-      filter: ['th', 'td'],
-      replacement: (content) => content.trim(),
+    td.addRule('table', {
+      filter: 'table',
+      replacement: (content) => '\n' + content.trim() + '\n',
     });
 
     // -----------------------------------------------------------------------
-    // Table — handle alignment + header separator + colspan
+    // Table row — handle header detection, colspan, rowspan, and
+    // preserve inner formatting via Turndown recursion
     // -----------------------------------------------------------------------
+    const rowspanTracker = new WeakMap();
+
     td.addRule('tableRow', {
       filter: 'tr',
-      replacement: (content, node) => {
-        const isHeader = node.parentNode?.nodeName === 'THEAD';
-        const cells = node.querySelectorAll('th, td');
-        const parts = Array.from(cells).map((cell) => {
-          const colspan = parseInt(cell.getAttribute('colspan')) || 1;
-          const cellContent = (cell.textContent || '').trim() || ' ';
-          if (colspan > 1) return Array(colspan).fill(cellContent).join(' | ');
-          return cellContent;
-        });
+      replacement: (_content, node) => {
+        const table = node.closest('table');
+        if (!table) return '';
 
-        if (isHeader) {
-          const aligns = Array.from(cells).map((cell) => {
+        // Initialise rowspan tracking per table
+        if (!rowspanTracker.has(table)) {
+          rowspanTracker.set(table, []);
+        }
+        const activeRowspans = rowspanTracker.get(table);
+
+        const cells = node.querySelectorAll('th, td');
+        if (!cells.length) return '';
+
+        // Detect header row: <thead> parent OR any <th> cells
+        const isHeader = node.parentNode?.nodeName === 'THEAD' || !!node.querySelector('th');
+
+        let colIndex = 0;
+        const parts = [];
+        const aligns = [];
+
+        for (const cell of cells) {
+          // Skip columns still occupied by rowspan from a previous row
+          while (activeRowspans[colIndex]) {
+            activeRowspans[colIndex]--;
+            if (activeRowspans[colIndex] <= 0) activeRowspans[colIndex] = 0;
+            colIndex++;
+          }
+
+          const colspan = parseInt(cell.getAttribute('colspan')) || 1;
+          const rowspan = parseInt(cell.getAttribute('rowspan')) || 1;
+
+          // Process cell content through Turndown so inline formatting
+          // (bold, italic, code, links, images) is preserved
+          let cellContent = '';
+          try {
+            cellContent = td.turndown(cell.innerHTML).trim();
+          } catch (_e) {
+            cellContent = (cell.textContent || '').trim();
+          }
+          // Collapse multiline to single line (pipe tables don't support
+          // multi-line cells reliably in most renderers)
+          cellContent = cellContent
+            .replace(/\n{2,}/g, ' ')
+            .replace(/\n/g, ' ')
+            .replace(/[ \t]+/g, ' ');
+          if (!cellContent) cellContent = ' ';
+
+          // Register rowspan: occupy spanned columns in future rows
+          if (rowspan > 1) {
+            for (let c = 0; c < colspan; c++) {
+              activeRowspans[colIndex + c] = Math.max(activeRowspans[colIndex + c] || 0, rowspan - 1);
+            }
+          }
+
+          // Build cell (handle colspan by repeating content across columns)
+          if (colspan > 1) {
+            parts.push(Array(colspan).fill(cellContent).join(' | '));
+          } else {
+            parts.push(cellContent);
+          }
+
+          // Alignment markers (header row only)
+          if (isHeader) {
             const align = cell.getAttribute('align') || '';
-            const colspan = parseInt(cell.getAttribute('colspan')) || 1;
-            const marker = align === 'left' ? ':---'
-              : align === 'center' ? ':---:'
-              : align === 'right' ? '---:'
-              : '---';
-            return Array(colspan).fill(marker).join(' | ');
-          });
-          return '| ' + parts.join(' | ') + ' |\n| ' + aligns.join(' | ') + ' |\n';
+            const marker =
+              align === 'left' ? ':---' : align === 'center' ? ':---:' : align === 'right' ? '---:' : '---';
+            if (colspan > 1) {
+              aligns.push(Array(colspan).fill(marker).join(' | '));
+            } else {
+              aligns.push(marker);
+            }
+          }
+
+          colIndex += colspan;
         }
 
-        return '| ' + parts.join(' | ') + ' |\n';
+        const rowStr = '| ' + parts.join(' | ') + ' |\n';
+
+        if (isHeader) {
+          return rowStr + '| ' + aligns.join(' | ') + ' |\n';
+        }
+
+        return rowStr;
       },
     });
 
@@ -415,18 +538,16 @@
       },
     });
 
-
-
     // -----------------------------------------------------------------------
     // Mermaid diagram blocks → ```mermaid
     // -----------------------------------------------------------------------
     td.addRule('mermaid', {
       filter: (node) =>
-        node.nodeName === 'PRE' && (
-          node.className.includes('language-mermaid') ||
-          /^(graph|flowchart|sequenceDiagram|classDiagram|stateDiagram|erDiagram|gantt|pie|gitGraph|mindmap|timeline|journey|quadrantChart|sankey|xychart|block|packet|architecture|kanban)\b/m
-            .test(node.textContent.trim())
-        ),
+        node.nodeName === 'PRE' &&
+        (node.className.includes('language-mermaid') ||
+          /^(graph|flowchart|sequenceDiagram|classDiagram|stateDiagram|erDiagram|gantt|pie|gitGraph|mindmap|timeline|journey|quadrantChart|sankey|xychart|block|packet|architecture|kanban)\b/m.test(
+            node.textContent.trim(),
+          )),
       replacement: (content) => '\n```mermaid\n' + content.trim() + '\n```\n',
     });
 
@@ -444,9 +565,7 @@
     td.addRule('embeddedMedia', {
       filter: ['video', 'audio'],
       replacement: (_content, node) => {
-        const src = node.getAttribute('src')
-          || node.querySelector('source')?.getAttribute('src')
-          || '';
+        const src = node.getAttribute('src') || node.querySelector('source')?.getAttribute('src') || '';
         if (!src) return '';
         const title = node.getAttribute('title') || node.tagName.toLowerCase();
         return `[${title}](${src})`;
@@ -459,9 +578,7 @@
         const src = node.getAttribute('src') || '';
         if (!src) return '';
         // Detect YouTube
-        const ytMatch = src.match(
-          /(?:youtube\.com\/embed\/|youtube\.com\/watch\?v=|youtu\.be\/)([a-zA-Z0-9_-]{11})/
-        );
+        const ytMatch = src.match(/(?:youtube\.com\/embed\/|youtube\.com\/watch\?v=|youtu\.be\/)([a-zA-Z0-9_-]{11})/);
         if (ytMatch) {
           return `[▶ YouTube: ${ytMatch[1]}](${src})`;
         }
@@ -478,8 +595,7 @@
     // Inline code (<code> not inside <pre>) — ensure proper backtick escaping
     // -----------------------------------------------------------------------
     td.addRule('inlineCode', {
-      filter: (node) =>
-        node.nodeName === 'CODE' && node.hasAttribute('data-inline-code'),
+      filter: (node) => node.nodeName === 'CODE' && node.hasAttribute('data-inline-code'),
       replacement: (content) => {
         const trimmed = content.trim();
         // If content contains backticks, use double backticks
@@ -506,7 +622,9 @@
         meta.image && `image: ${meta.image}`,
         `converted: ${new Date().toISOString()}`,
         '---\n\n',
-      ].filter(Boolean).join('\n');
+      ]
+        .filter(Boolean)
+        .join('\n');
     }
 
     if (options.includeTitle !== false) {
@@ -533,11 +651,11 @@
   function looksLikeMath(s) {
     const trimmed = s.trim();
     if (trimmed.length < 2) return false;
-    if (/\\[a-zA-Z]+/.test(trimmed)) return true;  // \frac, \sum, \alpha…
-    if (/[{}]/.test(trimmed)) return true;          // { } braces
-    if (/[_^]/.test(trimmed)) return true;           // subscript/superscript
-    if (/\\\(|\\\)/.test(trimmed)) return true;      // \( \)
-    if (/\\\[|\\\]/.test(trimmed)) return true;      // \[ \]
+    if (/\\[a-zA-Z]+/.test(trimmed)) return true; // \frac, \sum, \alpha…
+    if (/[{}]/.test(trimmed)) return true; // { } braces
+    if (/[_^]/.test(trimmed)) return true; // subscript/superscript
+    if (/\\\(|\\\)/.test(trimmed)) return true; // \( \)
+    if (/\\\[|\\\]/.test(trimmed)) return true; // \[ \]
     return false;
   }
 
@@ -575,18 +693,21 @@
     });
 
     // Step 4: strip trailing whitespace per line
-    md = md.split('\n').map((l) => l.replace(/[ \t]+$/, '')).join('\n');
+    md = md
+      .split('\n')
+      .map((l) => l.replace(/[ \t]+$/, ''))
+      .join('\n');
 
     // Step 5: normalize blank lines (max 2 consecutive)
     md = normalizeBlankLines(md);
 
     // Step 6: remove empty link/image references, empty blockquotes
     md = md
-      .replace(/\[\]\([^)]*\)\n?/g, '')       // []()
-      .replace(/\[( )?\]\([^)]*\)/g, '')       // [ ]() or [ ]()
-      .replace(/!\[\]\([^)]*\)\n?/g, '')       // ![]()
-      .replace(/^>\s*$\n?/gm, '')              // empty blockquote lines
-      .replace(/\n{3,}/g, '\n\n');             // max 1 blank line
+      .replace(/\[\]\([^)]*\)\n?/g, '') // []()
+      .replace(/\[( )?\]\([^)]*\)/g, '') // [ ]() or [ ]()
+      .replace(/!\[\]\([^)]*\)\n?/g, '') // ![]()
+      .replace(/^>\s*$\n?/gm, '') // empty blockquote lines
+      .replace(/\n{3,}/g, '\n\n'); // max 1 blank line
 
     return md.trim();
   }
@@ -596,7 +717,7 @@
     const isReadability = options.extractionMode !== 'raw' && !options.selector;
 
     const extractResult = isReadability
-      ? (extractWithReadability() || extractRaw(options.selector))
+      ? extractWithReadability() || extractRaw(options.selector)
       : extractRaw(options.selector);
 
     const wrapper = document.createElement('div');

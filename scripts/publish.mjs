@@ -58,9 +58,16 @@ function formatVersion(parts) {
 
 function bumpVersion(version, type) {
   const parts = parseVersion(version);
-  if (type === 'major') { parts[0]++; parts[1] = 0; parts[2] = 0; }
-  else if (type === 'minor') { parts[1]++; parts[2] = 0; }
-  else { parts[2]++; }
+  if (type === 'major') {
+    parts[0]++;
+    parts[1] = 0;
+    parts[2] = 0;
+  } else if (type === 'minor') {
+    parts[1]++;
+    parts[2] = 0;
+  } else {
+    parts[2]++;
+  }
   return formatVersion(parts);
 }
 
@@ -115,7 +122,9 @@ async function main() {
     'LICENSE',
     'package.json',
     'package-lock.json',
-  ].map(p => `-x "${p}"`).join(' ');
+  ]
+    .map((p) => `-x "${p}"`)
+    .join(' ');
 
   const cmd = `cd "${ROOT}" && zip -r "${zipPath}" . ${exclude}`;
   console.log(`\ud83d\udce6 Creating zip: ${zipName}`);

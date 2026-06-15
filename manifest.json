@@ -1,5 +1,8 @@
 {
   "manifest_version": 3,
+  "content_security_policy": {
+    "extension_pages": "script-src 'self'; object-src 'self'"
+  },
   "name": "Web2md",
   "version": "1.3.0",
   "description": "Convert any web page to clean Markdown — links, images, tables, code blocks, headings. Built with ANNG.",

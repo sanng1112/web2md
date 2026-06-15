@@ -1,126 +1,121 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Web2md</title>
-  <link rel="stylesheet" href="popup.css">
-</head>
-<body>
-  <div class="container">
-    <header class="header">
-      <h1 class="logo">Web2md</h1>
-      <div class="header-right">
-        <button id="btnTheme" class="btn-icon" title="Toggle dark mode">&#9790;</button>
-        <span class="version">v1.3</span>
-      </div>
-    </header>
-
-    <div class="page-info">
-      <span class="label">Page:</span>
-      <span class="title" id="pageTitle">Loading...</span>
-    </div>
-
-    <div class="options">
-      <div class="option-group">
-        <span class="group-label">Extraction mode</span>
-        <label class="option radio">
-          <input type="radio" name="extractionMode" value="readability" checked>
-          <span>Smart extract (Readability)</span>
-        </label>
-        <label class="option radio">
-          <input type="radio" name="extractionMode" value="raw">
-          <span>Raw HTML to Markdown</span>
-        </label>
-      </div>
-
-      <div class="option-group" id="selectorGroup" style="display:none;">
-        <span class="group-label">Custom selector</span>
-        <div class="selector-row">
-          <input type="text" id="optSelector" class="selector-input" placeholder="e.g. article, .post-body, #main-content">
-          <button id="btnSelectorHelp" class="btn-icon-sm" title="CSS selector help">?</button>
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Web2md</title>
+    <link rel="stylesheet" href="popup.css" />
+  </head>
+  <body>
+    <div class="container">
+      <header class="header">
+        <h1 class="logo">Web2md</h1>
+        <div class="header-right">
+          <button id="btnTheme" class="btn-icon" title="Toggle dark mode">&#9790;</button>
+          <span class="version">v1.3</span>
         </div>
-        <div id="selectorHint" class="selector-hint" style="display:none;">
-          CSS selector. Examples:<br>
-          <code>article</code>, <code>.post-body</code>, <code>#main</code>, <code>div.content &gt; p</code>
+      </header>
+
+      <div class="page-info">
+        <span class="label">Page:</span>
+        <span class="title" id="pageTitle">Loading...</span>
+      </div>
+
+      <div class="options">
+        <div class="option-group">
+          <span class="group-label">Extraction mode</span>
+          <label class="option radio">
+            <input type="radio" name="extractionMode" value="readability" checked />
+            <span>Smart extract (Readability)</span>
+          </label>
+          <label class="option radio">
+            <input type="radio" name="extractionMode" value="raw" />
+            <span>Raw HTML to Markdown</span>
+          </label>
+        </div>
+
+        <div class="option-group" id="selectorGroup" style="display: none">
+          <span class="group-label">Custom selector</span>
+          <div class="selector-row">
+            <input
+              type="text"
+              id="optSelector"
+              class="selector-input"
+              placeholder="e.g. article, .post-body, #main-content"
+            />
+            <button id="btnSelectorHelp" class="btn-icon-sm" title="CSS selector help">?</button>
+          </div>
+          <div id="selectorHint" class="selector-hint" style="display: none">
+            CSS selector. Examples:<br />
+            <code>article</code>, <code>.post-body</code>, <code>#main</code>, <code>div.content &gt; p</code>
+          </div>
+        </div>
+
+        <div class="option-group">
+          <span class="group-label">Output options</span>
+          <label class="option">
+            <input type="checkbox" id="optFrontmatter" checked />
+            <span>YAML frontmatter</span>
+          </label>
+          <label class="option">
+            <input type="checkbox" id="optTitle" checked />
+            <span>Page title as heading</span>
+          </label>
+          <label class="option">
+            <input type="checkbox" id="optSource" checked />
+            <span>Source URL below title</span>
+          </label>
+          <label class="option">
+            <input type="checkbox" id="optImages" checked />
+            <span>Include images</span>
+          </label>
+          <label class="option">
+            <input type="checkbox" id="optAutoCopy" checked />
+            <span>Auto-copy to clipboard</span>
+          </label>
         </div>
       </div>
 
-      <div class="option-group">
-        <span class="group-label">Output options</span>
-        <label class="option">
-          <input type="checkbox" id="optFrontmatter" checked>
-          <span>YAML frontmatter</span>
-        </label>
-        <label class="option">
-          <input type="checkbox" id="optTitle" checked>
-          <span>Page title as heading</span>
-        </label>
-        <label class="option">
-          <input type="checkbox" id="optSource" checked>
-          <span>Source URL below title</span>
-        </label>
-        <label class="option">
-          <input type="checkbox" id="optImages" checked>
-          <span>Include images</span>
-        </label>
-        <label class="option">
-          <input type="checkbox" id="optAutoCopy" checked>
-          <span>Auto-copy to clipboard</span>
-        </label>
+      <div class="actions">
+        <button id="btnConvert" class="btn btn-primary"><span class="icon">&#8635;</span> Convert</button>
+        <button id="btnCopy" class="btn btn-secondary" disabled><span class="icon">&#128203;</span> Copy</button>
+        <button id="btnDownloadMd" class="btn btn-secondary" disabled><span class="icon">&#128229;</span> .md</button>
+        <button id="btnDownloadHtml" class="btn btn-outline" disabled>.html</button>
+        <button id="btnDownloadTxt" class="btn btn-outline" disabled>.txt</button>
       </div>
-    </div>
 
-    <div class="actions">
-      <button id="btnConvert" class="btn btn-primary">
-        <span class="icon">&#8635;</span> Convert
-      </button>
-      <button id="btnCopy" class="btn btn-secondary" disabled>
-        <span class="icon">&#128203;</span> Copy
-      </button>
-      <button id="btnDownloadMd" class="btn btn-secondary" disabled>
-        <span class="icon">&#128229;</span> .md
-      </button>
-      <button id="btnDownloadHtml" class="btn btn-outline" disabled>
-        .html
-      </button>
-      <button id="btnDownloadTxt" class="btn btn-outline" disabled>
-        .txt
-      </button>
-    </div>
-
-    <div class="history-bar" id="historyBar" style="display:none;">
-      <span class="group-label">Recent</span>
-      <select id="historySelect" class="history-select">
-        <option value="">— history —</option>
-      </select>
-      <button id="btnClearHistory" class="btn-icon-sm" title="Clear history">&#128465;</button>
-    </div>
-
-    <div class="batch-bar" id="batchBar">
-      <div class="batch-header">
-        <span class="group-label">Batch (select tabs)</span>
-        <button id="btnLoadTabs" class="btn-icon-sm" title="Reload tab list">&#8635;</button>
-        <button id="btnSelectAll" class="btn-icon-sm" title="Select all">&#9745;</button>
-        <button id="btnDeselectAll" class="btn-icon-sm" title="Deselect all">&#9744;</button>
+      <div class="history-bar" id="historyBar" style="display: none">
+        <span class="group-label">Recent</span>
+        <select id="historySelect" class="history-select">
+          <option value="">— history —</option>
+        </select>
+        <button id="btnClearHistory" class="btn-icon-sm" title="Clear history">&#128465;</button>
       </div>
-      <div class="batch-list" id="batchList"></div>
-      <button id="btnBatchConvert" class="btn btn-secondary" style="width:100%;margin-top:4px;">
-        <span class="icon">&#128196;</span> Convert checked tabs
-      </button>
+
+      <div class="batch-bar" id="batchBar">
+        <div class="batch-header">
+          <span class="group-label">Batch (select tabs)</span>
+          <button id="btnLoadTabs" class="btn-icon-sm" title="Reload tab list">&#8635;</button>
+          <button id="btnSelectAll" class="btn-icon-sm" title="Select all">&#9745;</button>
+          <button id="btnDeselectAll" class="btn-icon-sm" title="Deselect all">&#9744;</button>
+        </div>
+        <div class="batch-list" id="batchList"></div>
+        <button id="btnBatchConvert" class="btn btn-secondary" style="width: 100%; margin-top: 4px">
+          <span class="icon">&#128196;</span> Convert checked tabs
+        </button>
+      </div>
+
+      <div class="status" id="status"></div>
+
+      <div class="preview-container">
+        <textarea id="preview" class="preview" placeholder="Markdown output will appear here..." readonly></textarea>
+        <div class="stats" id="stats">0 chars | 0 words | ~0 min read</div>
+      </div>
+
+      <footer class="footer">
+        <small>Web2md &mdash; Web to Markdown Converter</small>
+      </footer>
     </div>
-
-    <div class="status" id="status"></div>
-
-    <div class="preview-container">
-      <textarea id="preview" class="preview" placeholder="Markdown output will appear here..." readonly></textarea>
-      <div class="stats" id="stats">0 chars | 0 words | ~0 min read</div>
-    </div>
-
-    <footer class="footer">
-      <small>Web2md &mdash; Web to Markdown Converter</small>
-    </footer>
-  </div>
-  <script src="popup.js"></script>
-</body>
+    <script src="popup.js"></script>
+  </body>
 </html>

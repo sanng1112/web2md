@@ -109,7 +109,8 @@ async function convertSelection(tabId) {
           const td = new TurndownService({ headingStyle: 'atx', codeBlockStyle: 'fenced' });
           const md = td.turndown(container);
 
-          const header = '---\n' +
+          const header =
+            '---\n' +
             `title: "${pageMeta.title.replace(/"/g, '\\"')}"\n` +
             `source: ${pageMeta.url}\n` +
             `type: selection\n` +
