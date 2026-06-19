@@ -120,7 +120,11 @@
       return;
     }
     els.historyBar.style.display = 'flex';
-    els.historySelect.innerHTML = '<option value="">— history —</option>';
+    els.historySelect.textContent = '';
+    var defaultOption = document.createElement('option');
+    defaultOption.value = '';
+    defaultOption.textContent = '— history —';
+    els.historySelect.appendChild(defaultOption);
     items.forEach((item, i) => {
       const option = document.createElement('option');
       option.value = i;

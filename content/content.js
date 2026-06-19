@@ -380,7 +380,7 @@
         const href = node.getAttribute('href');
         if (!href || href === '#' || /^javascript:/.test(href)) return content;
         const title = node.getAttribute('title');
-        return '[' + content + '](' + href + (title ? ' "' + title + '"' : '') + ')';
+        return `[${content}](${href}${title ? ` "${title}"` : ''})`;
       },
     });
   }
@@ -393,7 +393,7 @@
       replacement: (_content, node) => {
         if (!includeImages) {
           const alt = node.getAttribute('alt') || '';
-          return alt ? '[📷 ' + alt + ']' : '';
+          return alt ? `[📷 ${alt}]` : '';
         }
         const alt = node.getAttribute('alt') || '';
         let src = node.getAttribute('src') || '';
@@ -411,8 +411,8 @@
           if (candidates.length) src = candidates[0][0];
         }
         const title = node.getAttribute('title') || '';
-        if (!src) return alt ? '[' + alt + ']' : '';
-        return '![' + alt + '](' + src + (title ? ' "' + title + '"' : '') + ')';
+        if (!src) return alt ? `[${alt}]` : '';
+        return `![${alt}](${src}${title ? ` "${title}"` : ''})`;
       },
     });
   }
@@ -428,7 +428,7 @@
           const alt = img.getAttribute('alt') || '';
           const src = img.getAttribute('src') || '';
           if (!src) return content;
-          return '![' + alt + '](' + src + ')\n*' + cap.textContent.trim() + '*\n';
+          return `![${alt}](${src})\n*${cap.textContent.trim()}*\n`;
         }
         return content;
       },
@@ -439,7 +439,7 @@
   function _strikethroughRule(td) {
     td.addRule('strikethrough', {
       filter: ['del', 's', 'strike'],
-      replacement: (content) => '~~' + content + '~~',
+      replacement: (content) => `~~${content}~~`,
     });
   }
 
@@ -447,7 +447,7 @@
   function _tableBlockRule(td) {
     td.addRule('table', {
       filter: 'table',
-      replacement: (content) => '\n' + content.trim() + '\n',
+      replacement: (content) => `\n${content.trim()}\n`,
     });
   }
 
@@ -500,8 +500,8 @@
           }
           colIndex += colspan;
         }
-        const rowStr = '| ' + parts.join(' | ') + ' |\n';
-        return isHeader ? rowStr + '| ' + aligns.join(' | ') + ' |\n' : rowStr;
+        const rowStr = `| ${parts.join(' | ')} |\n`;
+        return isHeader ? `${rowStr}| ${aligns.join(' | ')} |\n` : rowStr;
       },
     });
   }
@@ -517,8 +517,8 @@
       replacement: (content, node) => {
         const summary = node.querySelector('summary');
         const summaryText = summary ? summary.textContent.trim() : '';
-        if (summaryText) return '\n**' + summaryText + '**\n\n' + content.trim() + '\n\n';
-        return '\n' + content.trim() + '\n\n';
+        if (summaryText) return `\n**${summaryText}**\n\n${content.trim()}\n\n`;
+        return `\n${content.trim()}\n\n`;
       },
     });
   }
@@ -537,12 +537,12 @@
             currentDt = child.textContent.trim();
           } else if (child.tagName === 'DD' && currentDt !== null) {
             const ddText = child.textContent.trim();
-            items.push(currentDt + '\n: ' + ddText.replace(/\n/g, '\n  '));
+            items.push(`${currentDt}\n: ${ddText.replace(/\n/g, '\n  ')}`);
             currentDt = null;
           }
         }
         if (currentDt !== null) items.push(currentDt);
-        return '\n' + items.join('\n') + '\n';
+        return `\n${items.join('\n')}\n`;
       },
     });
   }
@@ -556,7 +556,7 @@
           /^(graph|flowchart|sequenceDiagram|classDiagram|stateDiagram|erDiagram|gantt|pie|gitGraph|mindmap|timeline|journey|quadrantChart|sankey|xychart|block|packet|architecture|kanban)\b/m.test(
             node.textContent.trim(),
           )),
-      replacement: (content) => '\n```mermaid\n' + content.trim() + '\n```\n',
+      replacement: (content) => `\n\`\`\`mermaid\n${content.trim()}\n\`\`\`\n`,
     });
   }
 
@@ -564,7 +564,7 @@
   function _mathBlockRule(td) {
     td.addRule('mathBlock', {
       filter: (node) => node.nodeName === 'PRE' && node.className.includes('language-math'),
-      replacement: (content) => '\n```math\n' + content.trim() + '\n```\n',
+      replacement: (content) => `\n\`\`\`math\n${content.trim()}\n\`\`\`\n`,
     });
   }
 
@@ -576,7 +576,7 @@
         const src = node.getAttribute('src') || node.querySelector('source')?.getAttribute('src') || '';
         if (!src) return '';
         const title = node.getAttribute('title') || node.tagName.toLowerCase();
-        return '[' + title + '](' + src + ')';
+        return `[${title}](${src})`;
       },
     });
   }
@@ -589,10 +589,10 @@
         const src = node.getAttribute('src') || '';
         if (!src) return '';
         const ytMatch = src.match(/(?:youtube\.com\/embed\/|youtube\.com\/watch\?v=|youtu\.be\/)([a-zA-Z0-9_-]{11})/);
-        if (ytMatch) return '[▶ YouTube: ' + ytMatch[1] + '](' + src + ')';
-        if (/player\.vimeo\.com\/video\//.test(src)) return '[▶ Vimeo](' + src + ')';
+        if (ytMatch) return `[▶ YouTube: ${ytMatch[1]}](${src})`;
+        if (/player\.vimeo\.com\/video\//.test(src)) return `[▶ Vimeo](${src})`;
         const title = node.getAttribute('title') || 'Embedded content';
-        return '[' + title + '](' + src + ')';
+        return `[${title}](${src})`;
       },
     });
   }
@@ -603,8 +603,8 @@
       filter: (node) => node.nodeName === 'CODE' && node.hasAttribute('data-inline-code'),
       replacement: (content) => {
         const trimmed = content.trim();
-        if (/`/.test(trimmed)) return '`` ' + trimmed + ' ``';
-        return '`' + trimmed + '`';
+        if (/`/.test(trimmed)) return `\`\` ${trimmed} \`\``;
+        return `\`${trimmed}\``;
       },
     });
   }

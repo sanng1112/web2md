@@ -651,6 +651,49 @@ body {
   color: var(--border);
 }
 
+/* ===== FOCUS VISIBLE ===== */
+/* Global outline for keyboard navigation only */
+:focus-visible {
+  outline: 2px solid var(--primary);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+/* Remove outline for mouse clicks while keeping it for keyboard */
+.btn:focus:not(:focus-visible),
+.btn-icon:focus:not(:focus-visible),
+.btn-icon-sm:focus:not(:focus-visible),
+.history-select:focus:not(:focus-visible),
+.selector-input:focus:not(:focus-visible) {
+  outline: none;
+}
+
+/* Custom focus ring for specific elements */
+.btn-primary:focus-visible {
+  outline: 2px solid rgba(255, 255, 255, 0.8);
+  outline-offset: 2px;
+}
+
+.btn-icon:focus-visible,
+.btn-icon-sm:focus-visible {
+  outline: 2px solid var(--primary);
+  outline-offset: 2px;
+}
+
+/* ===== ACCESSIBILITY ===== */
+/* Screen-reader only utility — visually hidden but accessible */
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
 /* ===== FOOTER ===== */
 .footer {
   padding: 8px 16px;

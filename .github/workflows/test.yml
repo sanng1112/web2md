@@ -24,3 +24,10 @@ jobs:
         run: npx playwright install chromium --with-deps
       - name: Run E2E tests
         run: node test/test-e2e.mjs
+      - name: Upload Playwright screenshots on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-screenshots-${{ matrix.node-version }}
+          path: test/screenshots/
+          retention-days: 7
