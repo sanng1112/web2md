@@ -734,6 +734,150 @@
   }
 
   // ---------------------------------------------------------------------------
+  // Selection Conversion — DOM matching, expand to nearest parent, normalise
+  // ---------------------------------------------------------------------------
+
+  /**
+   * Check if an element is an inline-level HTML element.
+   * Inline elements contain phrasing content and should not cause line breaks.
+   */
+  function isInlineElement(node) {
+    if (!node || node.nodeType !== Node.ELEMENT_NODE) return false;
+    const INLINE_TAGS = new Set([
+      'A', 'ABBR', 'ACRONYM', 'B', 'BDO', 'BIG', 'BR', 'BUTTON', 'CITE', 'CODE',
+      'DFN', 'EM', 'I', 'IMG', 'INPUT', 'KBD', 'LABEL', 'MAP', 'OBJECT', 'OUTPUT',
+      'Q', 'SAMP', 'SELECT', 'SMALL', 'SPAN', 'STRONG', 'SUB', 'SUP', 'TEXTAREA',
+      'TIME', 'TT', 'U', 'VAR', 'WBR',
+    ]);
+    return INLINE_TAGS.has(node.nodeName);
+  }
+
+  /**
+   * Expand a selection Range so boundaries that fall mid-text-node within an
+   * inline element cover the entire element.
+   *
+   * This solves the "string matching" problem: when a user selects partial
+   * text inside <strong>, <em>, <a>, etc., the expanded range captures the
+   * complete formatted content rather than a broken fragment.
+   *
+   * @param {Range} range — the original selection Range
+   * @returns {Range} a new Range with expanded boundaries
+   */
+  function expandRangeToNearestParent(range) {
+    const newRange = range.cloneRange();
+    const sc = range.startContainer;
+    const so = range.startOffset;
+    const ec = range.endContainer;
+    const eo = range.endOffset;
+
+    // --- Expand start boundary ---
+    if (sc.nodeType === Node.TEXT_NODE && so > 0) {
+      const parent = sc.parentNode;
+      if (parent && isInlineElement(parent) && parent.parentNode) {
+        const gp = parent.parentNode;
+        const idx = Array.from(gp.childNodes).indexOf(parent);
+        newRange.setStart(gp, idx);
+      } else {
+        // Parent is a block element — only go to text node start
+        newRange.setStart(sc, 0);
+      }
+    }
+
+    // --- Expand end boundary ---
+    if (ec.nodeType === Node.TEXT_NODE && eo < ec.textContent.length) {
+      const parent = ec.parentNode;
+      if (parent && isInlineElement(parent) && parent.parentNode) {
+        const gp = parent.parentNode;
+        const idx = Array.from(gp.childNodes).indexOf(parent);
+        newRange.setEnd(gp, idx + 1);
+      } else {
+        newRange.setEnd(ec, ec.textContent.length);
+      }
+    }
+
+    return newRange;
+  }
+
+  /**
+   * Normalise the Markdown output from a selection conversion:
+   * trim leading/trailing whitespace, fix line endings, collapse
+   * excessive blank lines.
+   */
+  function normalizeSelectionText(md) {
+    if (!md) return '';
+    return md
+      .trim()
+      .replace(/\r\n/g, '\n')
+      .replace(/\n{4,}/g, '\n\n\n')
+      .replace(/[ \t]+$/gm, '');
+  }
+
+  /**
+   * Convert the current page selection to Markdown.
+   *
+   * Pipeline:
+   *  1. Grab the Selection & Range
+   *  2. Optionally expand to nearest parent (DOM matching)
+   *  3. Clone the DOM subtree
+   *  4. Run through Turndown with user options
+   *  5. Clean & normalise the Markdown output
+   *  6. Build header with selection metadata
+   *
+   * @param {Object} options — user options (expandSelection, includeFrontmatter, etc.)
+   * @returns {{success: boolean, markdown?: string, error?: string}}
+   */
+  function convertSelectionToMarkdown(options) {
+    const selection = window.getSelection();
+    if (!selection || selection.isCollapsed || !selection.rangeCount) {
+      return { success: false, error: 'No text selected' };
+    }
+
+    try {
+      const range = selection.getRangeAt(0);
+
+      // Step 1: Expand selection to nearest parent elements (DOM matching)
+      const effectiveRange =
+        options.expandSelection !== false
+          ? expandRangeToNearestParent(range)
+          : range;
+
+      // Step 2: Clone the DOM subtree from the (possibly expanded) range
+      const fragment = effectiveRange.cloneContents();
+      const container = document.createElement('div');
+      container.appendChild(fragment);
+
+      // Step 3: Normalise the DOM (remove junk, resolve URLs, etc.)
+      normalizeDom(container);
+
+      // Step 4: Build Turndown service with user options
+      const td = buildTurndownService(options);
+
+      // Step 5: Convert to Markdown
+      let md = td.turndown(container);
+
+      // Step 6: Clean the Markdown output (shared pipeline)
+      md = cleanMarkdown(md);
+
+      // Step 7: Normalise selection-specific text (trim, blank lines)
+      md = normalizeSelectionText(md);
+
+      // Step 8: Build header (frontmatter or simple heading)
+      const meta = getPageMetadata();
+      const header = buildHeader(meta, options);
+
+      return {
+        success: true,
+        markdown: header + md,
+      };
+    } catch (e) {
+      return {
+        success: false,
+        error: e.message || 'Selection conversion failed',
+      };
+    }
+  }
+
+  // ---------------------------------------------------------------------------
   // Toast notification — visible feedback on the page
   // ---------------------------------------------------------------------------
   function showToast(message, type) {
@@ -790,6 +934,9 @@
       } catch (err) {
         sendResponse({ success: false, error: err.message });
       }
+    } else if (request.action === 'convertSelection') {
+      const result = convertSelectionToMarkdown(request.options || {});
+      sendResponse(result);
     } else if (request.action === 'getTitle') {
       sendResponse({ title: document.title, url: window.location.href });
     } else if (request.action === 'showToast') {
@@ -808,6 +955,10 @@
       extractWithReadability,
       extractRaw,
       convertToMarkdown,
+      isInlineElement,
+      expandRangeToNearestParent,
+      normalizeSelectionText,
+      convertSelectionToMarkdown,
     };
   }
 })();

@@ -1,11 +1,19 @@
 chrome.runtime.onInstalled.addListener(() => {
+  // Parent submenu — groups both Web2md actions under one roof
+  chrome.contextMenus.create({
+    id: 'web2md',
+    title: 'Web2md',
+    contexts: ['page', 'selection'],
+  });
   chrome.contextMenus.create({
     id: 'convertToMarkdown',
+    parentId: 'web2md',
     title: 'Convert page to Markdown',
     contexts: ['page'],
   });
   chrome.contextMenus.create({
     id: 'convertSelectionToMarkdown',
+    parentId: 'web2md',
     title: 'Convert selection to Markdown',
     contexts: ['selection'],
   });
@@ -86,51 +94,43 @@ async function convertTab(tabId) {
 
 async function convertSelection(tabId) {
   try {
-    const [{ result: meta }] = await chrome.scripting.executeScript({
-      target: { tabId },
-      func: () => ({
-        title: document.title,
-        url: window.location.href,
-      }),
-    });
-    await chrome.scripting.executeScript({
-      target: { tabId },
-      files: ['lib/turndown.js'],
-    });
-    const [{ result }] = await chrome.scripting.executeScript({
-      target: { tabId },
-      func: (pageMeta) => {
-        try {
-          const selection = window.getSelection();
-          if (!selection?.rangeCount) return null;
-          const range = selection.getRangeAt(0);
-          const container = document.createElement('div');
-          container.appendChild(range.cloneContents());
-          const td = new TurndownService({ headingStyle: 'atx', codeBlockStyle: 'fenced' });
-          const md = td.turndown(container);
-
-          const header =
-            '---\n' +
-            `title: "${pageMeta.title.replace(/"/g, '\\"')}"\n` +
-            `source: ${pageMeta.url}\n` +
-            `type: selection\n` +
-            `converted: ${new Date().toISOString()}\n` +
-            '---\n\n';
-
-          return header + md;
-        } catch (e) {
-          return null;
-        }
-      },
-      args: [meta],
-    });
-    if (result) {
-      await copyToClipboard(result, tabId);
-      showSuccessBadge(tabId);
-      showToastOnPage(tabId, 'Selection converted to Markdown! Copied to clipboard.', 'success');
-    } else {
-      showToastOnPage(tabId, 'No text selected', 'warning');
+    // Ensure content script is injected (idempotent if already present)
+    try {
+      await chrome.tabs.sendMessage(tabId, { action: 'getTitle' });
+    } catch {
+      await chrome.scripting.executeScript({
+        target: { tabId },
+        files: ['lib/turndown.js', 'lib/readability.js', 'content/content.js'],
+      });
     }
+
+    getSavedOptions(async (options) => {
+      try {
+        const response = await chrome.tabs.sendMessage(tabId, {
+          action: 'convertSelection',
+          options: {
+            includeFrontmatter: options.includeFrontmatter !== false,
+            includeTitle: options.includeTitle !== false,
+            includeSource: options.includeSource !== false,
+            includeImages: options.includeImages !== false,
+            expandSelection: true,
+          },
+        });
+        if (response?.success) {
+          if (options.autoCopy !== false) {
+            await copyToClipboard(response.markdown, tabId);
+          }
+          showSuccessBadge(tabId);
+          showToastOnPage(tabId, 'Selection converted to Markdown!', 'success');
+        } else {
+          showToastOnPage(tabId, response?.error || 'No text selected', 'warning');
+        }
+      } catch (err) {
+        console.error('Web2md selection error:', err);
+        showErrorBadge(tabId);
+        showToastOnPage(tabId, 'Selection conversion failed', 'error');
+      }
+    });
   } catch (err) {
     console.error('Web2md selection error:', err);
     showErrorBadge(tabId);
