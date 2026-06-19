@@ -39,7 +39,7 @@
 
   function setStatus(msg, isError) {
     els.status.textContent = msg || '';
-    els.status.className = 'status' + (isError ? ' error' : '');
+    els.status.className = `status${isError ? ' error' : ''}`;
     if (msg) {
       setTimeout(() => {
         if (els.status.textContent === msg) {
@@ -92,7 +92,7 @@
     const minutes = Math.max(1, Math.ceil(words / 200));
     if (charEl) charEl.textContent = chars.toLocaleString();
     if (wordEl) wordEl.textContent = words.toLocaleString();
-    if (readEl) readEl.textContent = '~' + minutes;
+    if (readEl) readEl.textContent = `~${minutes}`;
   }
 
   function loadHistory() {
@@ -137,18 +137,37 @@
   }
 
   async function loadBatchTabs() {
-    els.batchList.innerHTML = '<div class="batch-tab" style="color:var(--muted);padding:4px;">Loading tabs...</div>';
+    els.batchList.textContent = '';
+    var loadingMsg = document.createElement('div');
+    loadingMsg.className = 'batch-tab';
+    loadingMsg.style.color = 'var(--muted)';
+    loadingMsg.style.padding = '4px';
+    loadingMsg.textContent = 'Loading tabs...';
+    els.batchList.appendChild(loadingMsg);
+
     const tabs = await chrome.tabs.query({ currentWindow: true });
-    els.batchList.innerHTML = '';
-    tabs.forEach((tab, i) => {
-      const div = document.createElement('label');
-      div.className = 'batch-tab';
-      div.innerHTML = [
-        '<input type="checkbox" value="' + tab.id + '" class="batch-check">',
-        '<span class="tab-title">' + (tab.title || 'Untitled').replace(/</g, '&lt;').substring(0, 50) + '</span>',
-        '<span class="tab-url">' + (tab.url || '').replace(/</g, '&lt;') + '</span>',
-      ].join('');
-      els.batchList.appendChild(div);
+    els.batchList.textContent = '';
+    tabs.forEach(function(tab) {
+      var label = document.createElement('label');
+      label.className = 'batch-tab';
+
+      var checkbox = document.createElement('input');
+      checkbox.type = 'checkbox';
+      checkbox.className = 'batch-check';
+      checkbox.value = tab.id;
+
+      var titleSpan = document.createElement('span');
+      titleSpan.className = 'tab-title';
+      titleSpan.textContent = (tab.title || 'Untitled').substring(0, 50);
+
+      var urlSpan = document.createElement('span');
+      urlSpan.className = 'tab-url';
+      urlSpan.textContent = tab.url || '';
+
+      label.appendChild(checkbox);
+      label.appendChild(titleSpan);
+      label.appendChild(urlSpan);
+      els.batchList.appendChild(label);
     });
   }
 
@@ -160,7 +179,7 @@
       return;
     }
     els.btnBatchConvert.disabled = true;
-    setStatus('Converting ' + ids.length + ' tabs...');
+    setStatus(`Converting ${ids.length} tabs...`);
     disableOutputButtons();
 
     const parts = [];
@@ -179,17 +198,11 @@
         }
         const response = await chrome.tabs.sendMessage(ids[i], { action: 'convert', options: getOptions() });
         if (response?.success) {
-          parts.push('## ' + (tab.title || 'Untitled') + '\n\n> Source: ' + tab.url + '\n\n' + response.markdown);
+          parts.push(`## ${tab.title || 'Untitled'}\n\n> Source: ${tab.url}\n\n${response.markdown}`);
         } else {
           failed++;
           parts.push(
-            '## ' +
-              (tab.title || 'Untitled') +
-              '\n\n> Source: ' +
-              tab.url +
-              '\n\n_Conversion failed: ' +
-              (response?.error || 'unknown') +
-              '_\n',
+            `## ${tab.title || 'Untitled'}\n\n> Source: ${tab.url}\n\n_Conversion failed: ${response?.error || 'unknown'}_\n`,
           );
         }
       } catch (err) {
@@ -210,7 +223,7 @@
       } catch (_) {}
     }
 
-    setStatus('✓ ' + (ids.length - failed) + ' tabs converted' + (failed ? ', ' + failed + ' failed' : ''));
+    setStatus(`✓ ${ids.length - failed} tabs converted${failed ? `, ${failed} failed` : ''}`);
     els.btnBatchConvert.disabled = false;
   }
 
@@ -265,7 +278,7 @@
         date: new Date().toISOString(),
       });
 
-      let msg = '✓ Converted! ' + response.markdown.length.toLocaleString() + ' chars';
+      let msg = `✓ Converted! ${response.markdown.length.toLocaleString()} chars`;
 
       if (els.optAutoCopy.checked) {
         try {
@@ -278,7 +291,7 @@
 
       setStatus(msg);
     } catch (err) {
-      setStatus('✗ ' + err.message, true);
+      setStatus(`✗ ${err.message}`, true);
       updateStats(null);
     } finally {
       els.btnConvert.disabled = false;
@@ -306,7 +319,7 @@
         .replace(/\s+/g, '-')
         .toLowerCase() || 'web2md-output';
     a.href = url;
-    a.download = safeName + '.' + ext;
+    a.download = `${safeName}.${ext}`;
     a.click();
     URL.revokeObjectURL(url);
   }

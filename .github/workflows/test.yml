@@ -20,5 +20,7 @@ jobs:
           cache: npm
       - run: npm ci
       - run: npm test
+      - name: Install Playwright with Chromium
+        run: npx playwright install chromium --with-deps
       - name: Run E2E tests
-        run: npx playwright install chromium --with-deps 2>/dev/null && node test/test-e2e.mjs || echo "E2E skipped (no browser)"
+        run: node test/test-e2e.mjs

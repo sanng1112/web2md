@@ -62,7 +62,7 @@ async function convertTab(tabId) {
     } catch {
       await chrome.scripting.executeScript({
         target: { tabId },
-        files: ['lib/turndown.js', 'content/content.js'],
+        files: ['lib/turndown.js', 'lib/readability.js', 'content/content.js'],
       });
     }
 

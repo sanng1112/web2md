@@ -74,6 +74,9 @@
     'nav',
     'footer',
     'form',
+    'header:not([role="banner"])',
+    'header.header',
+    'header#header',
     '[role="navigation"]',
     '[role="banner"]',
     '[role="contentinfo"]',
@@ -83,45 +86,130 @@
     '.side-bar',
     '.widget',
     '.aside',
-    // ads (exact matches only — avoid false positives)
+    '.sidebar-right',
+    '.sidebar-left',
+    '[class*="sidebar"]',
+    // ads (exact matches only — avoid false positives on main content)
     '.ad',
     '.ads',
     '.advertisement',
     '.ad-container',
+    '.ad-banner',
+    '.ad-wrapper',
+    '.advertisement-banner',
+    '.ad-block',
+    '.advert',
+    '.sponsored',
+    '.sponsor',
     // social
     '.social-share',
     '.social-links',
     '.share-buttons',
+    '.social-media',
+    '.social-icons',
+    '.share-this',
+    '.sharing',
+    '.share-tools',
     // comments
     '.comments',
     '#comments',
     '.comment-section',
+    '.comment-form',
+    '.comments-area',
+    '.comment-list',
+    '#respond',
     // related content
     '.related-posts',
     '.related-articles',
     '.you-may-also-like',
+    '.recommended',
+    '.recommendations',
+    '.popular-posts',
+    '.latest-posts',
+    '.suggested-content',
+    '.more-articles',
+    '.also-read',
     // breadcrumbs
     '.breadcrumb',
     '.breadcrumbs',
+    '.bread-crumb',
     // cookie / GDPR
     '.cookie-banner',
     '.cookie-consent',
     '#cookie-notice',
     '.gdpr',
     '.consent-banner',
+    '.cookie-notice',
+    '.cookies-policy',
+    '.gdpr-cookie',
+    '.consent-notice',
+    '.eu-cookie',
     // newsletter / subscribe
     '.newsletter',
     '.subscribe',
     '.signup-form',
+    '.newsletter-signup',
+    '.email-subscribe',
+    '.subscribe-form',
+    '.subscription',
+    '.mailing-list',
+    '.email-signup',
     // pagination
     '.pagination',
     '.page-nav',
     '.prev-next',
+    '.nav-links',
+    '.post-navigation',
+    '.posts-navigation',
+    '.page-numbers',
     // modals / overlays
     '.modal',
     '.popup',
     '.overlay',
     '.lightbox',
+    '.modal-dialog',
+    '.modal-overlay',
+    '.popup-overlay',
+    '.overlay-content',
+    '.lightbox-content',
+    '.modal-backdrop',
+    // skip / accessibility (hidden from visual users)
+    '.skip-link',
+    '.skip-to-content',
+    '.screen-reader-text',
+    '.visually-hidden',
+    '.sr-only',
+    '.no-print',
+    // author / meta
+    '.author-bio',
+    '.author-box',
+    '.about-author',
+    '.post-meta',
+    '.entry-meta',
+    '.post-info',
+    '.metadata',
+    // table of contents
+    '.table-of-contents',
+    '.toc',
+    '#toc',
+    '.toc-wrapper',
+    // sticky / fixed
+    '.sticky-header',
+    '.sticky-footer',
+    '.sticky-sidebar',
+    // hidden
+    '.hide',
+    '.hidden',
+    '.d-none',
+    '.display-none',
+    '[hidden]',
+    '.lazyload',
+    '.lazy-load',
+    // top bar / announcement
+    '.top-bar',
+    '.announcement-bar',
+    '.notification-bar',
+    '.alert-banner',
   ];
 
   // Elements that are always removed regardless of content (junk)
@@ -145,160 +233,383 @@
   }
 
   // ---------------------------------------------------------------------------
-  // DOM normalization (single tree-walker pass where possible)
+  // DOM normalization — decomposed into single-responsibility helpers
   // ---------------------------------------------------------------------------
-  function normalizeDom(el) {
-    // 0. Handle MathJax FIRST (before script removal)
-    el.querySelectorAll('script[type^="math/tex"]').forEach((m) => {
-      const pre = document.createElement('pre');
-      pre.className = 'language-math';
-      pre.textContent = m.textContent.replace(/^;\s*mode\s*=\s*display\s*/i, '').trim();
-      m.replaceWith(pre);
-    });
 
-    // 1. Bulk-remove known junk by tag
+  /** Remove script, style, noscript tags + class-based junk selectors */
+  function _removeJunk(el) {
     el.querySelectorAll(JUNK_TAGS_SEL).forEach((n) => n.remove());
-
-    // 2. Remove by CSS selector (class-based junk)
     el.querySelectorAll(JUNK_SELECTORS.join(',')).forEach((n) => n.remove());
+  }
 
-    // 3. Single tree walker for style-hidden, empty pruning, and BR/HR cleanup
+  /** Remove hidden elements, collapse empty elements, condense consecutive <br> */
+  function _removeHiddenAndEmpty(el) {
     const walker = document.createTreeWalker(el, NodeFilter.SHOW_ELEMENT | NodeFilter.SHOW_TEXT, null, false);
     const toRemove = [];
     const nodes = [];
-
     while (walker.nextNode()) nodes.push(walker.currentNode);
 
     for (let i = 0; i < nodes.length; i++) {
       const n = nodes[i];
-
-      // Text nodes: trim trailing whitespace (handled later in cleanMarkdown)
       if (n.nodeType === Node.TEXT_NODE) continue;
-
       const tag = n.tagName;
 
-      // 3a. Remove hidden elements
-      if (isHidden(n)) {
-        toRemove.push(n);
-        continue;
-      }
+      // Hidden
+      if (isHidden(n)) { toRemove.push(n); continue; }
 
-      // 3b. Collapse empty elements (no text content, no media children)
-      // NOTE: table elements (TD, TH, TR, TABLE, etc.) are excluded because
-      // empty cells are valid and removing them breaks table structure.
-      if (
-        tag !== 'BR' &&
-        tag !== 'HR' &&
-        tag !== 'IMG' &&
-        tag !== 'INPUT' &&
-        tag !== 'WBR' &&
-        tag !== 'VIDEO' &&
-        tag !== 'AUDIO' &&
-        tag !== 'IFRAME' &&
-        tag !== 'TABLE' &&
-        tag !== 'TR' &&
-        tag !== 'TD' &&
-        tag !== 'TH' &&
-        tag !== 'THEAD' &&
-        tag !== 'TBODY' &&
-        tag !== 'TFOOT' &&
-        tag !== 'CAPTION' &&
-        tag !== 'COLGROUP' &&
-        tag !== 'COL'
-      ) {
+      // Empty (no content, no media children) — preserve table structure
+      const preservedTags = new Set([
+        'BR','HR','IMG','INPUT','WBR','VIDEO','AUDIO','IFRAME',
+        'TABLE','TR','TD','TH','THEAD','TBODY','TFOOT','CAPTION','COLGROUP','COL',
+      ]);
+      if (!preservedTags.has(tag)) {
         if (!n.textContent.trim() && !n.querySelector('img, video, audio, canvas, iframe')) {
-          toRemove.push(n);
-          continue;
+          toRemove.push(n); continue;
         }
       }
 
-      // 3c. Handle <br> — collapse consecutive <br>s into one
+      // Collapse consecutive <br>
       if (tag === 'BR') {
         let next = n.nextSibling;
         while (next && next.nodeType === Node.TEXT_NODE && !next.textContent.trim()) {
           next = next.nextSibling;
         }
         if (next && next.nodeType === Node.ELEMENT_NODE && next.tagName === 'BR') {
-          // This <br> has another <br> right after it — remove this one
           toRemove.push(n);
         }
         continue;
       }
 
-      // 3d. Empty <p></p> — remove entirely
+      // Empty <p>
       if (tag === 'P' && n.children.length === 0 && !n.textContent.trim()) {
         toRemove.push(n);
-        continue;
       }
     }
-
     toRemove.forEach((n) => n.remove());
+  }
 
-    // 4. Normalize code blocks: handle <pre><code> + data-* language attrs
+  /** Normalize <pre><code> — detect language from class / data- attrs */
+  function _normalizeCodeBlocks(el) {
     el.querySelectorAll('pre code').forEach((code) => {
       const pre = code.parentElement;
       if (pre.tagName !== 'PRE') return;
-      // Priority: class="language-*" > data-language > data-lang > none
       const lang =
         code.className.match(/language-(\w+)/)?.[1] ||
         code.getAttribute('data-language') ||
         pre.getAttribute('data-language') ||
         pre.getAttribute('data-lang') ||
         '';
-      // Keep the <code> child in place (Turndown's fencedCodeBlock rule
-      // reads language from <code>.className), and also mirror to <pre>
       code.className = 'language-' + lang;
       pre.className = 'language-' + lang;
     });
+  }
 
-    // 5. Inline <code> not inside <pre> — mark with a data attribute so
-    //    the Turndown rule can distinguish them from block code
+  /** Mark inline <code> (not inside <pre>) with data-inline-code attribute */
+  function _markInlineCode(el) {
     el.querySelectorAll('code').forEach((c) => {
-      if (!c.closest('pre')) {
-        c.setAttribute('data-inline-code', '');
-      }
+      if (!c.closest('pre')) c.setAttribute('data-inline-code', '');
     });
+  }
 
-    // 6. Mermaid diagrams
+  /** Convert Mermaid divs into <pre class="language-mermaid"> blocks */
+  function _normalizeMermaid(el) {
     el.querySelectorAll('.mermaid, pre.mermaid, div.mermaid, [data-processed="true"].mermaid').forEach((m) => {
       const pre = document.createElement('pre');
       pre.className = 'language-mermaid';
       pre.textContent = m.textContent;
       m.replaceWith(pre);
     });
+  }
 
-    // (MathJax handled in step 0 above — before script removal)
+  /** Convert MathJax scripts into <pre class="language-math"> blocks (run BEFORE script removal) */
+  function _normalizeMathJax(el) {
+    el.querySelectorAll('script[type^="math/tex"]').forEach((m) => {
+      const pre = document.createElement('pre');
+      pre.className = 'language-math';
+      pre.textContent = m.textContent.replace(/^;\s*mode\s*=\s*display\s*/i, '').trim();
+      m.replaceWith(pre);
+    });
+  }
 
-    // 8. Resolve relative URLs
+  /** Resolve relative URLs on <a> and <img> to absolute */
+  function _resolveRelativeUrls(el) {
     el.querySelectorAll('a[href]').forEach((a) => {
       const href = a.getAttribute('href');
-      if (!href) return;
-      if (/^(https?|mailto|javascript|#|data):/.test(href)) return;
-      try {
-        a.href = new URL(href, window.location.origin).href;
-      } catch (_) {}
+      if (!href || /^(https?|mailto|javascript|#|data):/.test(href)) return;
+      try { a.href = new URL(href, window.location.origin).href; } catch (_) {}
     });
-
     el.querySelectorAll('img[src]').forEach((img) => {
       if (!img.alt && !img.getAttribute('alt')) img.alt = '';
       const src = img.getAttribute('src');
-      if (!src) return;
-      if (src.startsWith('http') || src.startsWith('data:')) return;
-      try {
-        img.src = new URL(src, window.location.origin).href;
-      } catch (_) {}
+      if (!src || src.startsWith('http') || src.startsWith('data:')) return;
+      try { img.src = new URL(src, window.location.origin).href; } catch (_) {}
     });
+  }
 
-    // 9. Task-list checkboxes — convert to [x] / [ ] text so Turndown
-    //    doesn't strip them
+  /** Convert checkbox inputs inside <li> to [x] / [ ] text nodes */
+  function _processCheckboxes(el) {
     el.querySelectorAll('li input[type="checkbox"]').forEach((cb) => {
       const text = cb.checked ? '[x] ' : '[ ] ';
       cb.replaceWith(document.createTextNode(text));
     });
   }
 
+  /** Main DOM normalisation: runs all single-responsibility helpers in order */
+  function normalizeDom(el) {
+    _normalizeMathJax(el);          // must run before _removeJunk (scripts)
+    _removeJunk(el);
+    _removeHiddenAndEmpty(el);
+    _normalizeCodeBlocks(el);
+    _markInlineCode(el);
+    _normalizeMermaid(el);
+    _resolveRelativeUrls(el);
+    _processCheckboxes(el);
+  }
+
   const JUNK_TAGS_SEL = Array.from(new Set([...JUNK_TAGS, ...RAW_REMOVE_TAGS])).join(',');
 
+  // ---------------------------------------------------------------------------
+  // Turndown rule factories — each rule is a standalone function
+  // ---------------------------------------------------------------------------
+
+  /** Links — preserve title, skip empty / javascript: / void anchors */
+  function _linkRule(td) {
+    td.addRule('links', {
+      filter: (node) => node.nodeName === 'A' && node.getAttribute('href'),
+      replacement: (content, node) => {
+        const href = node.getAttribute('href');
+        if (!href || href === '#' || /^javascript:/.test(href)) return content;
+        const title = node.getAttribute('title');
+        return '[' + content + '](' + href + (title ? ' "' + title + '"' : '') + ')';
+      },
+    });
+  }
+
+  /** Images — toggle on/off; handle srcset (pick largest) */
+  function _imageRule(td, options) {
+    const includeImages = options.includeImages !== false;
+    td.addRule('images', {
+      filter: 'img',
+      replacement: (_content, node) => {
+        if (!includeImages) {
+          const alt = node.getAttribute('alt') || '';
+          return alt ? '[📷 ' + alt + ']' : '';
+        }
+        const alt = node.getAttribute('alt') || '';
+        let src = node.getAttribute('src') || '';
+        const srcset = node.getAttribute('srcset');
+        if (srcset) {
+          const candidates = srcset
+            .split(',')
+            .map((s) => s.trim().split(/\s+/))
+            .filter(([url]) => url && !url.startsWith('data:'))
+            .sort((a, b) => {
+              const wa = parseInt(a[1]) || 0;
+              const wb = parseInt(b[1]) || 0;
+              return wb - wa;
+            });
+          if (candidates.length) src = candidates[0][0];
+        }
+        const title = node.getAttribute('title') || '';
+        if (!src) return alt ? '[' + alt + ']' : '';
+        return '![' + alt + '](' + src + (title ? ' "' + title + '"' : '') + ')';
+      },
+    });
+  }
+
+  /** <figure> + <figcaption> → image with italic caption */
+  function _figureRule(td) {
+    td.addRule('figure', {
+      filter: 'figure',
+      replacement: (content, node) => {
+        const img = node.querySelector('img');
+        const cap = node.querySelector('figcaption');
+        if (img && cap) {
+          const alt = img.getAttribute('alt') || '';
+          const src = img.getAttribute('src') || '';
+          if (!src) return content;
+          return '![' + alt + '](' + src + ')\n*' + cap.textContent.trim() + '*\n';
+        }
+        return content;
+      },
+    });
+  }
+
+  /** Strikethrough <del>, <s> → ~~text~~ */
+  function _strikethroughRule(td) {
+    td.addRule('strikethrough', {
+      filter: ['del', 's', 'strike'],
+      replacement: (content) => '~~' + content + '~~',
+    });
+  }
+
+  /** Table block — ensure proper spacing around tables */
+  function _tableBlockRule(td) {
+    td.addRule('table', {
+      filter: 'table',
+      replacement: (content) => '\n' + content.trim() + '\n',
+    });
+  }
+
+  /** Table row — header detection, colspan, rowspan, inline formatting */
+  function _tableRowRule(td) {
+    const rowspanTracker = new WeakMap();
+    td.addRule('tableRow', {
+      filter: 'tr',
+      replacement: (_content, node) => {
+        const table = node.closest('table');
+        if (!table) return '';
+        if (!rowspanTracker.has(table)) rowspanTracker.set(table, []);
+        const activeRowspans = rowspanTracker.get(table);
+        const cells = node.querySelectorAll('th, td');
+        if (!cells.length) return '';
+        const isHeader = node.parentNode?.nodeName === 'THEAD' || !!node.querySelector('th');
+        let colIndex = 0;
+        const parts = [];
+        const aligns = [];
+        for (const cell of cells) {
+          while (activeRowspans[colIndex]) {
+            activeRowspans[colIndex]--;
+            if (activeRowspans[colIndex] <= 0) activeRowspans[colIndex] = 0;
+            colIndex++;
+          }
+          const colspan = parseInt(cell.getAttribute('colspan')) || 1;
+          const rowspan = parseInt(cell.getAttribute('rowspan')) || 1;
+          let cellContent = '';
+          try {
+            cellContent = td.turndown(cell.innerHTML).trim();
+          } catch (_e) {
+            cellContent = (cell.textContent || '').trim();
+          }
+          cellContent = cellContent.replace(/\n{2,}/g, ' ').replace(/\n/g, ' ').replace(/[ \t]+/g, ' ');
+          if (!cellContent) cellContent = ' ';
+          if (rowspan > 1) {
+            for (let c = 0; c < colspan; c++) {
+              activeRowspans[colIndex + c] = Math.max(activeRowspans[colIndex + c] || 0, rowspan - 1);
+            }
+          }
+          if (colspan > 1) {
+            parts.push(Array(colspan).fill(cellContent).join(' | '));
+          } else {
+            parts.push(cellContent);
+          }
+          if (isHeader) {
+            const align = cell.getAttribute('align') || '';
+            const marker = align === 'left' ? ':---' : align === 'center' ? ':---:' : align === 'right' ? '---:' : '---';
+            aligns.push(colspan > 1 ? Array(colspan).fill(marker).join(' | ') : marker);
+          }
+          colIndex += colspan;
+        }
+        const rowStr = '| ' + parts.join(' | ') + ' |\n';
+        return isHeader ? rowStr + '| ' + aligns.join(' | ') + ' |\n' : rowStr;
+      },
+    });
+  }
+
+  /** <details> / <summary> → summary in bold, then content */
+  function _detailsRule(td) {
+    td.addRule('skipSummary', {
+      filter: 'summary',
+      replacement: () => '',
+    });
+    td.addRule('details', {
+      filter: 'details',
+      replacement: (content, node) => {
+        const summary = node.querySelector('summary');
+        const summaryText = summary ? summary.textContent.trim() : '';
+        if (summaryText) return '\n**' + summaryText + '**\n\n' + content.trim() + '\n\n';
+        return '\n' + content.trim() + '\n\n';
+      },
+    });
+  }
+
+  /** Definition lists <dl> <dt> <dd> → term\n: definition */
+  function _definitionListRule(td) {
+    td.addRule('definitionList', {
+      filter: 'dl',
+      replacement: (content, node) => {
+        const items = [];
+        let currentDt = null;
+        for (const child of node.childNodes) {
+          if (child.nodeType !== Node.ELEMENT_NODE) continue;
+          if (child.tagName === 'DT') {
+            if (currentDt !== null) items.push(currentDt);
+            currentDt = child.textContent.trim();
+          } else if (child.tagName === 'DD' && currentDt !== null) {
+            const ddText = child.textContent.trim();
+            items.push(currentDt + '\n: ' + ddText.replace(/\n/g, '\n  '));
+            currentDt = null;
+          }
+        }
+        if (currentDt !== null) items.push(currentDt);
+        return '\n' + items.join('\n') + '\n';
+      },
+    });
+  }
+
+  /** Mermaid diagram blocks → ```mermaid */
+  function _mermaidRule(td) {
+    td.addRule('mermaid', {
+      filter: (node) =>
+        node.nodeName === 'PRE' &&
+        (node.className.includes('language-mermaid') ||
+          /^(graph|flowchart|sequenceDiagram|classDiagram|stateDiagram|erDiagram|gantt|pie|gitGraph|mindmap|timeline|journey|quadrantChart|sankey|xychart|block|packet|architecture|kanban)\b/m.test(
+            node.textContent.trim(),
+          )),
+      replacement: (content) => '\n```mermaid\n' + content.trim() + '\n```\n',
+    });
+  }
+
+  /** Math block → ```math */
+  function _mathBlockRule(td) {
+    td.addRule('mathBlock', {
+      filter: (node) => node.nodeName === 'PRE' && node.className.includes('language-math'),
+      replacement: (content) => '\n```math\n' + content.trim() + '\n```\n',
+    });
+  }
+
+  /** Video / Audio → Markdown link */
+  function _embeddedMediaRule(td) {
+    td.addRule('embeddedMedia', {
+      filter: ['video', 'audio'],
+      replacement: (_content, node) => {
+        const src = node.getAttribute('src') || node.querySelector('source')?.getAttribute('src') || '';
+        if (!src) return '';
+        const title = node.getAttribute('title') || node.tagName.toLowerCase();
+        return '[' + title + '](' + src + ')';
+      },
+    });
+  }
+
+  /** Iframe → Markdown link (with YouTube/Vimeo detection) */
+  function _iframeRule(td) {
+    td.addRule('iframe', {
+      filter: 'iframe',
+      replacement: (_content, node) => {
+        const src = node.getAttribute('src') || '';
+        if (!src) return '';
+        const ytMatch = src.match(/(?:youtube\.com\/embed\/|youtube\.com\/watch\?v=|youtu\.be\/)([a-zA-Z0-9_-]{11})/);
+        if (ytMatch) return '[▶ YouTube: ' + ytMatch[1] + '](' + src + ')';
+        if (/player\.vimeo\.com\/video\//.test(src)) return '[▶ Vimeo](' + src + ')';
+        const title = node.getAttribute('title') || 'Embedded content';
+        return '[' + title + '](' + src + ')';
+      },
+    });
+  }
+
+  /** Inline code — ensure proper backtick escaping */
+  function _inlineCodeRule(td) {
+    td.addRule('inlineCode', {
+      filter: (node) => node.nodeName === 'CODE' && node.hasAttribute('data-inline-code'),
+      replacement: (content) => {
+        const trimmed = content.trim();
+        if (/`/.test(trimmed)) return '`` ' + trimmed + ' ``';
+        return '`' + trimmed + '`';
+      },
+    });
+  }
+
+  /** Build and configure TurndownService with all custom rules */
   function buildTurndownService(options) {
     const td = new TurndownService({
       headingStyle: 'atx',
@@ -313,296 +624,19 @@
       preformattedCode: true,
     });
 
-    // -----------------------------------------------------------------------
-    // Links — preserve title, skip empty / javascript: / void anchors
-    // -----------------------------------------------------------------------
-    td.addRule('links', {
-      filter: (node) => node.nodeName === 'A' && node.getAttribute('href'),
-      replacement: (content, node) => {
-        const href = node.getAttribute('href');
-        if (!href || href === '#' || /^javascript:/.test(href)) return content;
-        const title = node.getAttribute('title');
-        return `[${content}](${href}${title ? ` "${title}"` : ''})`;
-      },
-    });
-
-    // -----------------------------------------------------------------------
-    // Images — toggle on/off; handle srcset (pick largest)
-    // -----------------------------------------------------------------------
-    const imgRule =
-      options.includeImages !== false
-        ? {
-            filter: 'img',
-            replacement: (_content, node) => {
-              const alt = node.getAttribute('alt') || '';
-              let src = node.getAttribute('src') || '';
-              // Prefer srcset largest candidate over plain src when available
-              const srcset = node.getAttribute('srcset');
-              if (srcset) {
-                const candidates = srcset
-                  .split(',')
-                  .map((s) => s.trim().split(/\s+/))
-                  .filter(([url]) => url && !url.startsWith('data:'))
-                  .sort((a, b) => {
-                    const wa = parseInt(a[1]) || 0;
-                    const wb = parseInt(b[1]) || 0;
-                    return wb - wa; // largest first
-                  });
-                if (candidates.length) src = candidates[0][0];
-              }
-              const title = node.getAttribute('title') || '';
-              if (!src) return alt ? `[${alt}]` : '';
-              return `![${alt}](${src}${title ? ` "${title}"` : ''})`;
-            },
-          }
-        : {
-            filter: 'img',
-            replacement: (_content, node) => {
-              const alt = node.getAttribute('alt') || '';
-              return alt ? `[📷 ${alt}]` : '';
-            },
-          };
-
-    td.addRule('images', imgRule);
-
-    // -----------------------------------------------------------------------
-    // <figure> + <figcaption> → image with italic caption
-    // -----------------------------------------------------------------------
-    td.addRule('figure', {
-      filter: 'figure',
-      replacement: (content, node) => {
-        const img = node.querySelector('img');
-        const cap = node.querySelector('figcaption');
-        if (img && cap) {
-          const alt = img.getAttribute('alt') || '';
-          const src = img.getAttribute('src') || '';
-          if (!src) return content;
-          return `![${alt}](${src})\n*${cap.textContent.trim()}*\n`;
-        }
-        return content;
-      },
-    });
-
-    // -----------------------------------------------------------------------
-    // Strikethrough <del>, <s> → ~~text~~
-    // -----------------------------------------------------------------------
-    td.addRule('strikethrough', {
-      filter: ['del', 's', 'strike'],
-      replacement: (content) => '~~' + content + '~~',
-    });
-
-    // -----------------------------------------------------------------------
-    // Table block — ensure proper spacing around tables
-    // -----------------------------------------------------------------------
-    td.addRule('table', {
-      filter: 'table',
-      replacement: (content) => '\n' + content.trim() + '\n',
-    });
-
-    // -----------------------------------------------------------------------
-    // Table row — handle header detection, colspan, rowspan, and
-    // preserve inner formatting via Turndown recursion
-    // -----------------------------------------------------------------------
-    const rowspanTracker = new WeakMap();
-
-    td.addRule('tableRow', {
-      filter: 'tr',
-      replacement: (_content, node) => {
-        const table = node.closest('table');
-        if (!table) return '';
-
-        // Initialise rowspan tracking per table
-        if (!rowspanTracker.has(table)) {
-          rowspanTracker.set(table, []);
-        }
-        const activeRowspans = rowspanTracker.get(table);
-
-        const cells = node.querySelectorAll('th, td');
-        if (!cells.length) return '';
-
-        // Detect header row: <thead> parent OR any <th> cells
-        const isHeader = node.parentNode?.nodeName === 'THEAD' || !!node.querySelector('th');
-
-        let colIndex = 0;
-        const parts = [];
-        const aligns = [];
-
-        for (const cell of cells) {
-          // Skip columns still occupied by rowspan from a previous row
-          while (activeRowspans[colIndex]) {
-            activeRowspans[colIndex]--;
-            if (activeRowspans[colIndex] <= 0) activeRowspans[colIndex] = 0;
-            colIndex++;
-          }
-
-          const colspan = parseInt(cell.getAttribute('colspan')) || 1;
-          const rowspan = parseInt(cell.getAttribute('rowspan')) || 1;
-
-          // Process cell content through Turndown so inline formatting
-          // (bold, italic, code, links, images) is preserved
-          let cellContent = '';
-          try {
-            cellContent = td.turndown(cell.innerHTML).trim();
-          } catch (_e) {
-            cellContent = (cell.textContent || '').trim();
-          }
-          // Collapse multiline to single line (pipe tables don't support
-          // multi-line cells reliably in most renderers)
-          cellContent = cellContent
-            .replace(/\n{2,}/g, ' ')
-            .replace(/\n/g, ' ')
-            .replace(/[ \t]+/g, ' ');
-          if (!cellContent) cellContent = ' ';
-
-          // Register rowspan: occupy spanned columns in future rows
-          if (rowspan > 1) {
-            for (let c = 0; c < colspan; c++) {
-              activeRowspans[colIndex + c] = Math.max(activeRowspans[colIndex + c] || 0, rowspan - 1);
-            }
-          }
-
-          // Build cell (handle colspan by repeating content across columns)
-          if (colspan > 1) {
-            parts.push(Array(colspan).fill(cellContent).join(' | '));
-          } else {
-            parts.push(cellContent);
-          }
-
-          // Alignment markers (header row only)
-          if (isHeader) {
-            const align = cell.getAttribute('align') || '';
-            const marker =
-              align === 'left' ? ':---' : align === 'center' ? ':---:' : align === 'right' ? '---:' : '---';
-            if (colspan > 1) {
-              aligns.push(Array(colspan).fill(marker).join(' | '));
-            } else {
-              aligns.push(marker);
-            }
-          }
-
-          colIndex += colspan;
-        }
-
-        const rowStr = '| ' + parts.join(' | ') + ' |\n';
-
-        if (isHeader) {
-          return rowStr + '| ' + aligns.join(' | ') + ' |\n';
-        }
-
-        return rowStr;
-      },
-    });
-
-    // -----------------------------------------------------------------------
-    // <details> / <summary> → summary in bold, then content
-    // -----------------------------------------------------------------------
-    td.addRule('skipSummary', {
-      filter: 'summary',
-      replacement: () => '',
-    });
-
-    td.addRule('details', {
-      filter: 'details',
-      replacement: (content, node) => {
-        const summary = node.querySelector('summary');
-        const summaryText = summary ? summary.textContent.trim() : '';
-        if (summaryText) {
-          return '\n**' + summaryText + '**\n\n' + content.trim() + '\n\n';
-        }
-        return '\n' + content.trim() + '\n\n';
-      },
-    });
-
-    // -----------------------------------------------------------------------
-    // Definition lists <dl> <dt> <dd> → ``term\n: definition``
-    // -----------------------------------------------------------------------
-    td.addRule('definitionList', {
-      filter: 'dl',
-      replacement: (content, node) => {
-        const items = [];
-        let currentDt = null;
-        for (const child of node.childNodes) {
-          if (child.nodeType !== Node.ELEMENT_NODE) continue;
-          if (child.tagName === 'DT') {
-            // Save previous item if any
-            if (currentDt !== null) items.push(currentDt);
-            currentDt = child.textContent.trim();
-          } else if (child.tagName === 'DD' && currentDt !== null) {
-            const ddText = child.textContent.trim();
-            items.push(currentDt + '\n: ' + ddText.replace(/\n/g, '\n  '));
-            currentDt = null;
-          }
-        }
-        if (currentDt !== null) items.push(currentDt);
-        return '\n' + items.join('\n') + '\n';
-      },
-    });
-
-    // -----------------------------------------------------------------------
-    // Mermaid diagram blocks → ```mermaid
-    // -----------------------------------------------------------------------
-    td.addRule('mermaid', {
-      filter: (node) =>
-        node.nodeName === 'PRE' &&
-        (node.className.includes('language-mermaid') ||
-          /^(graph|flowchart|sequenceDiagram|classDiagram|stateDiagram|erDiagram|gantt|pie|gitGraph|mindmap|timeline|journey|quadrantChart|sankey|xychart|block|packet|architecture|kanban)\b/m.test(
-            node.textContent.trim(),
-          )),
-      replacement: (content) => '\n```mermaid\n' + content.trim() + '\n```\n',
-    });
-
-    // -----------------------------------------------------------------------
-    // Math block → ```math
-    // -----------------------------------------------------------------------
-    td.addRule('mathBlock', {
-      filter: (node) => node.nodeName === 'PRE' && node.className.includes('language-math'),
-      replacement: (content) => '\n```math\n' + content.trim() + '\n```\n',
-    });
-
-    // -----------------------------------------------------------------------
-    // Video / Audio / Iframe → Markdown link
-    // -----------------------------------------------------------------------
-    td.addRule('embeddedMedia', {
-      filter: ['video', 'audio'],
-      replacement: (_content, node) => {
-        const src = node.getAttribute('src') || node.querySelector('source')?.getAttribute('src') || '';
-        if (!src) return '';
-        const title = node.getAttribute('title') || node.tagName.toLowerCase();
-        return `[${title}](${src})`;
-      },
-    });
-
-    td.addRule('iframe', {
-      filter: 'iframe',
-      replacement: (_content, node) => {
-        const src = node.getAttribute('src') || '';
-        if (!src) return '';
-        // Detect YouTube
-        const ytMatch = src.match(/(?:youtube\.com\/embed\/|youtube\.com\/watch\?v=|youtu\.be\/)([a-zA-Z0-9_-]{11})/);
-        if (ytMatch) {
-          return `[▶ YouTube: ${ytMatch[1]}](${src})`;
-        }
-        // Detect Vimeo
-        if (/player\.vimeo\.com\/video\//.test(src)) {
-          return `[▶ Vimeo](${src})`;
-        }
-        const title = node.getAttribute('title') || 'Embedded content';
-        return `[${title}](${src})`;
-      },
-    });
-
-    // -----------------------------------------------------------------------
-    // Inline code (<code> not inside <pre>) — ensure proper backtick escaping
-    // -----------------------------------------------------------------------
-    td.addRule('inlineCode', {
-      filter: (node) => node.nodeName === 'CODE' && node.hasAttribute('data-inline-code'),
-      replacement: (content) => {
-        const trimmed = content.trim();
-        // If content contains backticks, use double backticks
-        if (/`/.test(trimmed)) return '`` ' + trimmed + ' ``';
-        return '`' + trimmed + '`';
-      },
-    });
+    _linkRule(td);
+    _imageRule(td, options);
+    _figureRule(td);
+    _strikethroughRule(td);
+    _tableBlockRule(td);
+    _tableRowRule(td);
+    _detailsRule(td);
+    _definitionListRule(td);
+    _mermaidRule(td);
+    _mathBlockRule(td);
+    _embeddedMediaRule(td);
+    _iframeRule(td);
+    _inlineCodeRule(td);
 
     // Keep these inline tags as-is (Turndown will wrap in Markdown)
     td.keep(['kbd', 'mark', 'abbr', 'dfn', 'sub', 'sup', 'small']);
@@ -667,8 +701,7 @@
       .split('\n')
       .reduce((acc, line) => {
         const prev = acc[acc.length - 1];
-        const prev2 = acc[acc.length - 2];
-        if (line === '' && prev === '' && prev2 === '') return acc;
+        if (line === '' && prev === '') return acc;
         acc.push(line);
         return acc;
       }, [])
@@ -698,7 +731,7 @@
       .map((l) => l.replace(/[ \t]+$/, ''))
       .join('\n');
 
-    // Step 5: normalize blank lines (max 2 consecutive)
+    // Step 5: normalize blank lines (max 1 consecutive)
     md = normalizeBlankLines(md);
 
     // Step 6: remove empty link/image references, empty blockquotes
@@ -706,8 +739,7 @@
       .replace(/\[\]\([^)]*\)\n?/g, '') // []()
       .replace(/\[( )?\]\([^)]*\)/g, '') // [ ]() or [ ]()
       .replace(/!\[\]\([^)]*\)\n?/g, '') // ![]()
-      .replace(/^>\s*$\n?/gm, '') // empty blockquote lines
-      .replace(/\n{3,}/g, '\n\n'); // max 1 blank line
+      .replace(/^>\s*$\n?/gm, '') // empty blockquote lines;
 
     return md.trim();
   }

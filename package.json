@@ -30,6 +30,8 @@
   "homepage": "https://github.com/sanng1112/web2md#readme",
   "devDependencies": {
     "eslint": "^9.39.4",
+    "eslint-plugin-complexity": "^1.0.2",
+    "eslint-plugin-sonarjs": "^4.1.0",
     "globals": "^17.6.0",
     "jsdom": "^29.1.1",
     "playwright": "^1.60.0"
